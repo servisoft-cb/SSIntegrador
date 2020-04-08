@@ -22,12 +22,10 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-    Label5: TLabel;
     lblStatus: TLabel;
     lblLocal: TLabel;
     lblServidor: TLabel;
-    lblUltimaExportacao: TLabel;
-    lblUltimaImportacao: TLabel;
+    lblUltimaAtualizacao: TLabel;
     FDLocal: TFDConnection;
     FDServer: TFDConnection;
     shpLocal: TShape;
@@ -43,6 +41,8 @@ type
     qryConsultaTabelaLocal: TFDQuery;
     procedure FormCreate(Sender: TObject);
     procedure JvThreadTimerTimer(Sender: TObject);
+    procedure ApplicationEvents1Minimize(Sender: TObject);
+    procedure TrayIconDblClick(Sender: TObject);
   private
     { Private declarations }
     vTerminal : String;
@@ -211,6 +211,15 @@ begin
   end;
 end;
 
+procedure TfrmPrincipal.ApplicationEvents1Minimize(Sender: TObject);
+begin
+  Self.Hide();
+  Self.WindowState := wsMinimized;
+  TrayIcon.Visible := True;
+  TrayIcon.Animate := True;
+  TrayIcon.ShowBalloonHint;
+end;
+
 procedure TfrmPrincipal.AtualizaStatus(aValue: String);
 begin
   Application.Title := aValue;
@@ -290,9 +299,9 @@ begin
     if not (IsEmpty) then
     while not Eof do
     begin
-      AtualizaStatus('Recebendo Cupom Fiscal => ' + FieldByName('ID_CUPOMFISCAL').AsString);
+      AtualizaStatus('Recebendo Cupom Fiscal => ' + FieldByName('ID').AsString);
 
-      vCondicao := 'ID = ' + FieldByName('ID_CUPOMFISCAL').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'CUPOMFISCAL';
       Abrir_Tabela_Local(vTabela, vCondicao);
 
@@ -326,13 +335,13 @@ begin
       end;
 
       //Gravar itens
-      vCondicao := 'ID = ' + FieldByName('ID_CUPOMFISCAL').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'CUPOMFISCAL_ITENS';
       Abrir_Tabela_Local(vTabela, vCondicao);
       qryConsultaTabelaLocal.First;
       while not qryConsultaTabelaLocal.Eof do
       begin
-        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID_CUPOMFISCAL').AsString);
+        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
 //        vCondicao := 'ID = ' + qryConsultaTabelaLocal.FieldByName('ID').AsString + 'AND ITEM = ' + qryConsultaTabelaLocal.FieldByName('ITEM').AsString;
         vCondicao := '0 = 1 ';
         vTabela := 'CUPOMFISCAL_ITENS';
@@ -366,13 +375,13 @@ begin
       end;
 
       //Gravar itens sem
-      vCondicao := 'ID = ' + FieldByName('ID_CUPOMFISCAL').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'CUPOMFISCAL_ITENS_SEM';
       Abrir_Tabela_Local(vTabela, vCondicao);
       qryConsultaTabelaLocal.First;
       while not qryConsultaTabelaLocal.Eof do
       begin
-        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID_CUPOMFISCAL').AsString);
+        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
         vCondicao := 'ID = ' + qryConsultaTabelaLocal.FieldByName('ID').AsString + 'AND ITEM = ' + qryConsultaTabelaLocal.FieldByName('ITEM').AsString;
         vTabela := 'CUPOMFISCAL_ITENS_SEM';
         Abrir_Consulta_Servidor(vTabela, vCondicao);
@@ -404,13 +413,13 @@ begin
       end;
 
       //Gravar cupom parc
-      vCondicao := 'ID = ' + FieldByName('ID_CUPOMFISCAL').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'CUPOMFISCAL_PARC';
       Abrir_Tabela_Local(vTabela, vCondicao);
       qryConsultaTabelaLocal.First;
       while not qryConsultaTabelaLocal.Eof do
       begin
-        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID_CUPOMFISCAL').AsString);
+        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
         vCondicao := 'ID = ' + qryConsultaTabelaLocal.FieldByName('ID').AsString + 'AND PARCELA = ' + qryConsultaTabelaLocal.FieldByName('PARCELA').AsString;
         vTabela := 'CUPOMFISCAL_PARC';
         Abrir_Consulta_Servidor(vTabela, vCondicao);
@@ -442,13 +451,13 @@ begin
       end;
 
       //Gravar cupom troca
-      vCondicao := 'ID = ' + FieldByName('ID_CUPOMFISCAL').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'CUPOMFISCAL_TROCA';
       Abrir_Tabela_Local(vTabela, vCondicao);
       qryConsultaTabelaLocal.First;
       while not qryConsultaTabelaLocal.Eof do
       begin
-        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID_CUPOMFISCAL').AsString);
+        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
         vCondicao := 'ID = ' + qryConsultaTabelaLocal.FieldByName('ID').AsString + 'AND ITEM = ' + qryConsultaTabelaLocal.FieldByName('ITEM').AsString;
         vTabela := 'CUPOMFISCAL_TROCA';
         Abrir_Consulta_Servidor(vTabela, vCondicao);
@@ -481,13 +490,13 @@ begin
 
 
       //Gravar Cupom Fiscal FormaPagto
-      vCondicao := 'ID = ' + FieldByName('ID_CUPOMFISCAL').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'CUPOMFISCAL_FORMAPGTO';
       Abrir_Tabela_Local(vTabela, vCondicao);
       qryConsultaTabelaLocal.First;
       while not qryConsultaTabelaLocal.Eof do
       begin
-        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID_CUPOMFISCAL').AsString);
+        AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
         vCondicao := 'ID = ' + qryConsultaTabelaLocal.FieldByName('ID').AsString + 'AND ITEM = ' + qryConsultaTabelaLocal.FieldByName('ITEM').AsString;
         vTabela := 'CUPOMFISCAL_FORMAPGTO';
         Abrir_Consulta_Servidor(vTabela, vCondicao);
@@ -556,7 +565,7 @@ begin
     while not Eof do
     begin
       AtualizaStatus('Recebendo Cliente => ' + FieldByName('ID_PESSOA').AsString);
-      vCondicao := 'codigo = ' + FieldByName('ID_PESSOA').AsString; 
+      vCondicao := 'codigo = ' + FieldByName('ID').AsString;
       vTabela := 'PESSOA';
       Abrir_Consulta_Local(vTabela, vCondicao);
       if qryConsultaLocal.IsEmpty then
@@ -564,7 +573,7 @@ begin
       else
         qryConsultaLocal.Edit;
 
-      vCondicao := 'codigo = ' + FieldByName('ID_PESSOA').AsString; 
+      vCondicao := 'codigo = ' + FieldByName('ID').AsString;
       vTabela := 'PESSOA';
       Abrir_Tabela_Servidor(vTabela, vCondicao);
       for I := 0 to qryConsultaTabelaServer.FieldCount - 1 do
@@ -587,7 +596,7 @@ begin
       end;
 
       vTabela := 'PESSOA_LOG';
-      vCondicao := 'and id_pessoa = ' + FieldByName('ID_PESSOA').AsString;
+      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
       Apaga_Registro(FDServer,vTabela, True, vCondicao);
       Next;
     end;
@@ -605,8 +614,8 @@ begin
     if not (IsEmpty) then
     while not Eof do
     begin
-      AtualizaStatus('Recebendo NCM => ' + FieldByName('ID_NCM').AsString);
-      vCondicao := 'ID = ' + FieldByName('ID_NCM').AsString; 
+      AtualizaStatus('Recebendo NCM => ' + FieldByName('ID').AsString);
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'TAB_NCM';
       Abrir_Consulta_Local(vTabela, vCondicao);
       if qryConsultaLocal.IsEmpty then
@@ -614,7 +623,7 @@ begin
       else
         qryConsultaLocal.Edit;
 
-      vCondicao := 'ID = ' + FieldByName('ID_NCM').AsString; 
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'TAB_NCM';
       Abrir_Tabela_Servidor(vTabela, vCondicao);
       for I := 0 to qryConsultaTabelaServer.FieldCount - 1 do
@@ -637,7 +646,7 @@ begin
       end;
 
       vTabela := 'TAB_NCM_LOG';
-      vCondicao := 'AND ID_NCM = ' + FieldByName('ID_NCM').AsString;
+      vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
       Apaga_Registro(FDServer,vTabela, True, vCondicao);
       Next;
     end;
@@ -741,8 +750,8 @@ begin
     if not (IsEmpty) then
     while not Eof do
     begin
-      AtualizaStatus('Recebendo Produtos => ' + FieldByName('ID_PRODUTO').AsString);
-      vCondicao := 'ID = ' + QuotedStr(FieldByName('ID_PRODUTO').AsString); 
+      AtualizaStatus('Recebendo Produtos => ' + FieldByName('ID').AsString);
+      vCondicao := 'ID = ' + QuotedStr(FieldByName('ID').AsString);
       vTabela := 'PRODUTO';
       Abrir_Consulta_Local(vTabela, vCondicao);
       if qryConsultaLocal.IsEmpty then
@@ -750,7 +759,7 @@ begin
       else
         qryConsultaLocal.Edit;
 
-      vCondicao := 'ID = ' + FieldByName('ID_PRODUTO').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'PRODUTO';
       Abrir_Tabela_Servidor(vTabela, vCondicao);
 
@@ -773,7 +782,7 @@ begin
         Application.ProcessMessages;
       end;
       vTabela := 'PRODUTO_LOG';
-      vCondicao := 'AND ID_PRODUTO = ' + FieldByName('ID_PRODUTO').AsString;
+      vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
       Apaga_Registro(FDServer,vTabela, True, vCondicao);
       Next;
     end;
@@ -791,8 +800,8 @@ begin
     if not (IsEmpty) then
     while not Eof do
     begin
-      AtualizaStatus('Recebendo Tabela de Preço => ' + FieldByName('ID_TABPRECO').AsString);
-      vCondicao := 'ID = ' + FieldByName('ID_TABPRECO').AsString;
+      AtualizaStatus('Recebendo Tabela de Preço => ' + FieldByName('ID').AsString);
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'TAB_PRECO';
       Abrir_Consulta_Local(vTabela, vCondicao);
       if qryConsultaLocal.IsEmpty then
@@ -800,7 +809,7 @@ begin
       else
         qryConsultaLocal.Edit;
 
-      vCondicao := 'ID = ' + FieldByName('ID_TABPRECO').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'TAB_PRECO';
       Abrir_Tabela_Servidor(vTabela, vCondicao);
       for I := 0 to qryConsultaTabelaServer.FieldCount - 1 do
@@ -824,13 +833,13 @@ begin
 
       //Gravar itens
 
-      vCondicao := 'ID = ' + FieldByName('ID_TABPRECO').AsString;
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
       vTabela := 'TAB_PRECO_ITENS';
       Abrir_Tabela_Servidor(vTabela, vCondicao);
       qryConsultaTabelaServer.First;
       while not qryConsultaTabelaServer.Eof do
       begin
-        AtualizaStatus('Recebendo Itens Tabela de Preço => ' + FieldByName('ID_TABPRECO').AsString);
+        AtualizaStatus('Recebendo Itens Tabela de Preço => ' + FieldByName('ID').AsString);
         vCondicao := 'ID = ' + qryConsultaTabelaServer.FieldByName('ID').AsString + 'AND ITEM = ' + qryConsultaTabelaServer.FieldByName('ITEM').AsString;
         vTabela := 'TAB_PRECO_ITENS';
         Abrir_Consulta_Local(vTabela, vCondicao);
@@ -861,7 +870,7 @@ begin
       end;
 
       vTabela := 'TAB_PRECO_LOG';
-      vCondicao := 'and ID_TABPRECO = ' + FieldByName('ID_TABPRECO').AsString;
+      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
       Apaga_Registro(FDServer,vTabela, True, vCondicao);
       Next;
     end;
@@ -877,12 +886,11 @@ var
   BaseLocal, DriverName, UserName, PassWord : String;
   BaseServer, DriverNameServer, UserNameServer, PassWordServer, IP : String;
   Local : Integer;
-
   Configuracoes : TIniFile;
   Decoder64: TIdDecoderMIME;
   Encoder64: TIdEncoderMIME;
-
 begin
+  lblUltimaAtualizacao.Caption := 'Aguardando configurações';
   top := Screen.Height - Height - 50;
   left := Screen.Width - Width;
   Decoder64 := TIdDecoderMIME.Create(nil);
@@ -899,13 +907,13 @@ begin
     UserName   := Configuracoes.ReadString('SSFacil', 'UserName',   '');
     PassWord   := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil', 'PASSWORD', ''));
 
-    BaseServer := Configuracoes.ReadString('SERVIDOR_IMPORTADOR', 'DATABASE', '');
-    DriverNameServer := Configuracoes.ReadString('SERVIDOR_IMPORTADOR', 'DriverName', '');
-    UserNameServer   := Configuracoes.ReadString('SERVIDOR_IMPORTADOR', 'UserName', '');
-    IP := Configuracoes.ReadString('SERVIDOR_IMPORTADOR','IP','');
-    PassWordServer   := Decoder64.DecodeString(Configuracoes.ReadString('SERVIDOR_IMPORTADOR', 'PASSWORD', ''));
-    vTerminal := Configuracoes.ReadString('SERVIDOR_IMPORTADOR', 'Terminal', '');
-    vTempoCiclo := StrToInt(Configuracoes.ReadString('SERVIDOR_IMPORTADOR', 'TempoCiclo', '20000'));
+    BaseServer := Configuracoes.ReadString('SSFacil_Servidor', 'DATABASE', '');
+    DriverNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'DriverName', '');
+    UserNameServer   := Configuracoes.ReadString('SSFacil_Servidor', 'UserName', '');
+    IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
+    PassWordServer   := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil_Servidor', 'PASSWORD', ''));
+    vTerminal := Configuracoes.ReadString('SSFacil_Servidor', 'Terminal', '');
+    vTempoCiclo := StrToInt(Configuracoes.ReadString('SSFacil_Servidor', 'TempoCiclo', '20000'));
   finally
     Configuracoes.Free;
     Decoder64.Free;
@@ -981,13 +989,21 @@ begin
 
     Desconectar;
   end;
-
   Application.Title := 'Aguardando Proximo Ciclo';
   lblStatus.Caption := 'Aguardando Proximo Ciclo';
   lblStatus.Update;
+  lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ',Now);
   Application.ProcessMessages;
   TrayIcon.Animate := False;
   JvThreadTimer.Enabled := True;
+end;
+
+procedure TfrmPrincipal.TrayIconDblClick(Sender: TObject);
+begin
+  TrayIcon.Visible := False;
+  Show();
+  WindowState := wsNormal;
+  Application.BringToFront();
 end;
 
 end.
