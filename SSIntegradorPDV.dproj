@@ -108,6 +108,12 @@
             <Form>frmPrincipal</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="uDMPrincipal.pas">
+            <Form>DMPrincipal</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TDataModule</DesignClass>
+        </DCCReference>
+        <DCCReference Include="TrataException.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -129,7 +135,6 @@
                     <Source Name="MainSource">SSIntegradorPDV.dpr</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="D:\Componentes\fortesreport-ce-master\Binary\LibD23\frce.bpl">Fortes Report Comunity Edition</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcboffice2k230.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcbofficexp230.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k230.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
@@ -137,7 +142,7 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="2">
-                <DeployFile LocalName="Win32\Debug\SSIntegradorPDV.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Delphi7\SSFacil\EXE\SSIntegradorPDV.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>SSIntegradorPDV.exe</RemoteName>
                         <Overwrite>true</Overwrite>

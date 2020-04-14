@@ -11,6 +11,7 @@ object frmPrincipal: TfrmPrincipal
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnClose = FormClose
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
@@ -21,8 +22,6 @@ object frmPrincipal: TfrmPrincipal
     Height = 113
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 512
-    ExplicitHeight = 157
     object lblTerminal: TLabel
       Left = 1
       Top = 1
@@ -94,7 +93,6 @@ object frmPrincipal: TfrmPrincipal
       Font.Style = [fsBold]
       ParentColor = False
       ParentFont = False
-      ExplicitTop = 137
       ExplicitWidth = 52
     end
     object lblLocal: TLabel
@@ -157,41 +155,18 @@ object frmPrincipal: TfrmPrincipal
   end
   object ApplicationEvents1: TApplicationEvents
     OnMinimize = ApplicationEvents1Minimize
-    Left = 264
-    Top = 16
+    Left = 312
+    Top = 64
   end
   object JvThreadTimer: TJvThreadTimer
     Enabled = True
     OnTimer = JvThreadTimerTimer
-    Left = 264
+    Left = 312
     Top = 16
   end
   object PopupMenu1: TPopupMenu
     Left = 264
-    Top = 16
-  end
-  object FDLocal: TFDConnection
-    Params.Strings = (
-      'User_Name=sysdba'
-      'Password=masterkey'
-      'Port=3050'
-      'CharacterSet=WIN1252'
-      'DriverID=FB')
-    LoginPrompt = False
-    Left = 328
-    Top = 8
-  end
-  object FDServer: TFDConnection
-    Params.Strings = (
-      'Protocol=TCPIP'
-      'Port=3050'
-      'CharacterSet=WIN1252'
-      'User_Name=sysdba'
-      'Password=masterkey'
-      'DriverID=FB')
-    LoginPrompt = False
-    Left = 328
-    Top = 48
+    Top = 64
   end
   object TrayIcon: TTrayIcon
     Animate = True
@@ -335,49 +310,7 @@ object frmPrincipal: TfrmPrincipal
       0000000000010004FFF400040000800800012FA5FFFF0001FFFF800FFFFF}
     PopupMenu = PopupMenu1
     OnDblClick = TrayIconDblClick
-    Left = 264
+    Left = 256
     Top = 16
-  end
-  object qryConsultaLocal: TFDQuery
-    CachedUpdates = True
-    Connection = FDLocal
-    Left = 328
-    Top = 8
-  end
-  object qryConsultaServidor: TFDQuery
-    CachedUpdates = True
-    Connection = FDServer
-    Left = 328
-    Top = 48
-  end
-  object qryLocalUpdate: TFDQuery
-    Connection = FDLocal
-    Left = 328
-    Top = 8
-  end
-  object qryServerUpdate: TFDQuery
-    Connection = FDServer
-    Left = 328
-    Top = 48
-  end
-  object qryApagaLocal: TFDQuery
-    Connection = FDLocal
-    Left = 328
-    Top = 8
-  end
-  object qryApagaServer: TFDQuery
-    Connection = FDServer
-    Left = 328
-    Top = 48
-  end
-  object qryConsultaTabelaServer: TFDQuery
-    Connection = FDServer
-    Left = 328
-    Top = 48
-  end
-  object qryConsultaTabelaLocal: TFDQuery
-    Connection = FDLocal
-    Left = 328
-    Top = 8
   end
 end
