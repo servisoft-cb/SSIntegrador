@@ -38,7 +38,7 @@ begin
   else
     Rewrite(txtLog);
   Writeln(txtLog, FormatDateTime('dd/mm/YY hh:nn:ss - ',Now) + Value);
-
+  CloseFile(txtLog);
 end;
 
 procedure TException.TrataException(Sender: TObject; E: Exception);

@@ -5,8 +5,7 @@ uses
   uPrincipal in 'uPrincipal.pas' {frmPrincipal},
   Vcl.Themes,
   Vcl.Styles,
-  uDMPrincipal in 'uDMPrincipal.pas' {DMPrincipal: TDataModule},
-  TrataException in 'TrataException.pas';
+  uDMPrincipal in 'uDMPrincipal.pas' {DMPrincipal: TDataModule};
 
 {$R *.res}
 

@@ -10,7 +10,8 @@ uses
   FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async,
   FireDAC.Phys, FireDAC.VCLUI.Wait, Data.DB, FireDAC.Comp.Client,
   FireDAC.Phys.FB, FireDAC.Phys.FBDef, FireDAC.Stan.Param, FireDAC.DatS,
-  FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Comp.DataSet, uDMPrincipal, TrataException;
+  FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Comp.DataSet, uDMPrincipal, TrataException,
+  Vcl.Buttons;
 
 type
   TfrmPrincipal = class(TForm)
@@ -67,7 +68,7 @@ procedure TfrmPrincipal.Abrir_Consulta_Local(Tabela : String; Condicao : String=
 begin
   fDMPrincipal.qryConsultaLocal.Close;
   fDMPrincipal.qryConsultaLocal.SQL.Clear;
-  fDMPrincipal.qryConsultaLocal.SQL.Add('SELECT * FROM ' + Tabela + ' HERE ' + Condicao);
+  fDMPrincipal.qryConsultaLocal.SQL.Add('SELECT * FROM ' + Tabela + ' WHERE ' + Condicao);
   fDMPrincipal.qryConsultaLocal.Open;
   fDMPrincipal.qryConsultaLocal.First;
 end;
@@ -194,10 +195,10 @@ begin
     try
       qry.ExecSQL;
     except
-//      on E : Exception do
-//      begin
-//        GravaLogErro(e.Message + ' - ' + qry.SQL.Text);
-//      end;
+      on E : Exception do
+      begin
+        GravaLogErro(e.Message + ' - ' + qry.SQL.Text);
+      end;
     end;
   finally
     FreeAndNil(qry);
@@ -303,10 +304,10 @@ begin
       try
         fDMPrincipal.FDServer.ExecSQL('DELETE FROM CUPOMFISCAL ' + vCondicao);
       except
-//        on E : Exception do
-//        begin
-//          GravaLogErro('Erro Excluindo Cupom Fiscal nº: ' + IntToStr(vNumCupom));
-//        end;
+        on E : Exception do
+        begin
+          GravaLogErro('Erro Excluindo Cupom Fiscal nº: ' + IntToStr(vNumCupom));
+        end;
       end;
 
     end;
@@ -566,7 +567,7 @@ begin
       try
         fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
       except
-//        GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
+        GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
       end;
 
       //Gravar Duplicata - Histórico - Comissão - Financeiro
@@ -700,6 +701,7 @@ begin
 
   {$region 'Inclui/Altera Unidade'}
   AtualizaStatus('Verificando Alterações em Unidades');
+
   vTabela := 'UNIDADE';
   vCondicao := ' 0=0 order by UNIDADE';
   Abrir_Tabela_Servidor(vTabela, vCondicao);
@@ -922,6 +924,182 @@ begin
   AtualizaStatus('');
   {$endregion}
 
+  {$region 'Inclui/Altera Condição de Pagamento'}
+  AtualizaStatus('Verificando Alterações em Condição de Pagamento');
+  vTabela := 'CONDPGTO_LOG';
+  vCondicao := 'Tipo <> ''2'' and ID_TERMINAL = ' + vTerminal + ' order by ID_TERMINAL';
+  Abrir_Consulta_Servidor(vTabela, vCondicao);
+  with fDMPrincipal.qryConsultaServidor do
+  begin
+    if not (IsEmpty) then
+    while not Eof do
+    begin
+      AtualizaStatus('Recebendo Condições de Pagto => ' + FieldByName('ID').AsString);
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
+      vTabela := 'CONDPGTO';
+      Abrir_Consulta_Local(vTabela, vCondicao);
+      if fDMPrincipal.qryConsultaLocal.IsEmpty then
+        fDMPrincipal.qryConsultaLocal.Insert
+      else
+        fDMPrincipal.qryConsultaLocal.Edit;
+
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
+      vTabela := 'CONDPGTO';
+      Abrir_Tabela_Servidor(vTabela, vCondicao);
+      for I := 0 to fDMPrincipal.qryConsultaTabelaServer.FieldCount - 1 do
+      begin
+        try
+          fDMPrincipal.qryConsultaLocal.FindField(fDMPrincipal.qryConsultaTabelaServer.Fields[i].FieldName).AsVariant :=
+             fDMPrincipal.qryConsultaTabelaServer.Fields[i].AsVariant;
+        except
+          Application.ProcessMessages;
+        end;
+      end;
+      try
+        fDMPrincipal.qryConsultaLocal.Post;
+        fDMPrincipal.qryConsultaLocal.ApplyUpdates(0);
+        erro := False;
+      except
+        fDMPrincipal.qryConsultaLocal.Cancel;
+        erro := True;
+        Application.ProcessMessages;
+      end;
+
+      //Gravar itens
+
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
+      vTabela := 'CONDPGTO_DIA';
+      Abrir_Tabela_Servidor(vTabela, vCondicao);
+      fDMPrincipal.qryConsultaTabelaServer.First;
+      while not fDMPrincipal.qryConsultaTabelaServer.Eof do
+      begin
+        AtualizaStatus('Recebendo Itens Condições de Pagto => ' + FieldByName('ID').AsString);
+        vCondicao := 'ID = ' + fDMPrincipal.qryConsultaTabelaServer.FieldByName('ID').AsString + 'AND ITEM = ' + fDMPrincipal.qryConsultaTabelaServer.FieldByName('ITEM').AsString;
+        vTabela := 'CONDPGTO_DIA';
+        Abrir_Consulta_Local(vTabela, vCondicao);
+        if fDMPrincipal.qryConsultaLocal.IsEmpty then
+          fDMPrincipal.qryConsultaLocal.Insert
+        else
+          fDMPrincipal.qryConsultaLocal.Edit;
+
+        for I := 0 to fDMPrincipal.qryConsultaTabelaServer.FieldCount - 1 do
+        begin
+          try
+            fDMPrincipal.qryConsultaLocal.FindField(fDMPrincipal.qryConsultaTabelaServer.Fields[i].FieldName).AsVariant :=
+               fDMPrincipal.qryConsultaTabelaServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
+        try
+          fDMPrincipal.qryConsultaLocal.Post;
+          fDMPrincipal.qryConsultaLocal.ApplyUpdates(0);
+          erro := False;
+        except
+          fDMPrincipal.qryConsultaLocal.Cancel;
+          erro := True;
+          Application.ProcessMessages;
+        end;
+        fDMPrincipal.qryConsultaTabelaServer.Next;
+      end;
+
+      vTabela := 'CONDPGTO_LOG';
+      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+      Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
+      Next;
+    end;
+  end;
+  AtualizaStatus('');
+  {$endregion}
+
+  {$region 'Inclui/Altera Parametros'}
+  AtualizaStatus('Verificando Alterações Parâmetros');
+  vTabela := 'PARAMETROS_LOG';
+  vCondicao := 'Tipo <> ''2'' and ID_TERMINAL = ' + vTerminal + ' order by ID_TERMINAL';
+  Abrir_Consulta_Servidor(vTabela, vCondicao);
+  with fDMPrincipal.qryConsultaServidor do
+  begin
+    if not (IsEmpty) then
+    while not Eof do
+    begin
+      AtualizaStatus('Recebendo Parâmetros => ' + FieldByName('ID').AsString);
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
+      vTabela := 'PARAMETROS';
+      Abrir_Consulta_Local(vTabela, vCondicao);
+      if fDMPrincipal.qryConsultaLocal.IsEmpty then
+        fDMPrincipal.qryConsultaLocal.Insert
+      else
+        fDMPrincipal.qryConsultaLocal.Edit;
+
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
+      vTabela := 'PARAMETROS';
+      Abrir_Tabela_Servidor(vTabela, vCondicao);
+      for I := 0 to fDMPrincipal.qryConsultaTabelaServer.FieldCount - 1 do
+      begin
+        try
+          fDMPrincipal.qryConsultaLocal.FindField(fDMPrincipal.qryConsultaTabelaServer.Fields[i].FieldName).AsVariant :=
+             fDMPrincipal.qryConsultaTabelaServer.Fields[i].AsVariant;
+        except
+          Application.ProcessMessages;
+        end;
+      end;
+      try
+        fDMPrincipal.qryConsultaLocal.Post;
+        fDMPrincipal.qryConsultaLocal.ApplyUpdates(0);
+        erro := False;
+      except
+        fDMPrincipal.qryConsultaLocal.Cancel;
+        erro := True;
+        Application.ProcessMessages;
+      end;
+
+      //Gravar Parametros Financeiro
+
+      vCondicao := 'ID = ' + FieldByName('ID').AsString;
+      vTabela := 'PARAMETROS_FIN';
+      Abrir_Tabela_Servidor(vTabela, vCondicao);
+      fDMPrincipal.qryConsultaTabelaServer.First;
+      while not fDMPrincipal.qryConsultaTabelaServer.Eof do
+      begin
+        AtualizaStatus('Recebendo Parâmetros Financeiro => ' + FieldByName('ID').AsString);
+        vCondicao := 'ID = ' + fDMPrincipal.qryConsultaTabelaServer.FieldByName('ID').AsString;
+        vTabela := 'PARAMETROS_FIN';
+        Abrir_Consulta_Local(vTabela, vCondicao);
+        if fDMPrincipal.qryConsultaLocal.IsEmpty then
+          fDMPrincipal.qryConsultaLocal.Insert
+        else
+          fDMPrincipal.qryConsultaLocal.Edit;
+
+        for I := 0 to fDMPrincipal.qryConsultaTabelaServer.FieldCount - 1 do
+        begin
+          try
+            fDMPrincipal.qryConsultaLocal.FindField(fDMPrincipal.qryConsultaTabelaServer.Fields[i].FieldName).AsVariant :=
+               fDMPrincipal.qryConsultaTabelaServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
+        try
+          fDMPrincipal.qryConsultaLocal.Post;
+          fDMPrincipal.qryConsultaLocal.ApplyUpdates(0);
+          erro := False;
+        except
+          fDMPrincipal.qryConsultaLocal.Cancel;
+          erro := True;
+          Application.ProcessMessages;
+        end;
+        fDMPrincipal.qryConsultaTabelaServer.Next;
+      end;
+
+      vTabela := 'PARAMETROS_LOG';
+      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+      Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
+      Next;
+    end;
+  end;
+  AtualizaStatus('');
+  {$endregion}
+
 end;
 
 procedure TfrmPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -1000,17 +1178,17 @@ const
 var
   vLog: TextFile;
 begin
-//  try
-//    AssignFile(vLog,Arquivo);
-//    if not FileExists(Arquivo) then
-//      Rewrite(vLog,Arquivo);
-//    Append(vLog);
-//    Writeln(vLog, DateTimeToStr(Now));
-//    Writeln(vLog, Erro);
-//    Writeln(vLog, '=======================================');
-//  finally
-//    CloseFile(vLog);
-//  end;
+  try
+    AssignFile(vLog,Arquivo);
+    if not FileExists(Arquivo) then
+      Rewrite(vLog,Arquivo);
+    Append(vLog);
+    Writeln(vLog, DateTimeToStr(Now));
+    Writeln(vLog, Erro);
+    Writeln(vLog, '=======================================');
+  finally
+    CloseFile(vLog);
+  end;
 end;
 
 procedure TfrmPrincipal.JvThreadTimerTimer(Sender: TObject);
