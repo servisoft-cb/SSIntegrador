@@ -5,7 +5,8 @@ uses
   uPrincipal in 'uPrincipal.pas' {frmPrincipal},
   Vcl.Themes,
   Vcl.Styles,
-  uDMPrincipal in 'uDMPrincipal.pas' {DMPrincipal: TDataModule};
+  uDMPrincipal in 'uDMPrincipal.pas' {DMPrincipal: TDataModule},
+  Classe.Campos in 'Classe.Campos.pas';
 
 {$R *.res}
 
