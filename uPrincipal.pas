@@ -6,12 +6,11 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus,
   JvComponentBase, JvThreadTimer, Vcl.AppEvnts, IniFiles, IdCoderMIME,
-  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf,
-  FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async,
-  FireDAC.Phys, FireDAC.VCLUI.Wait, Data.DB, FireDAC.Comp.Client,
-  FireDAC.Phys.FB, FireDAC.Phys.FBDef, FireDAC.Stan.Param, FireDAC.DatS,
-  FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Comp.DataSet, uDMPrincipal, TrataException,
-  Vcl.Buttons;
+  uDMPrincipal, TrataException,
+  Vcl.Buttons, FireDAC.Stan.Intf, FireDAC.Stan.Option,
+  FireDAC.Stan.Param, FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf,
+  FireDAC.DApt.Intf, FireDAC.Stan.Async, FireDAC.DApt, Data.DB,
+  FireDAC.Comp.DataSet, FireDAC.Comp.Client;
 
 type
   TfrmPrincipal = class(TForm)
@@ -68,7 +67,6 @@ begin
   AtualizaStatus('Verificando Exclusões de Clientes!');
   try
     QryDados_Log.Close;
-    QryDados_Log.Connection := fDMPrincipal.FDServer;
     fDMPrincipal.vTabela := 'PESSOA_LOG';
     fDMPrincipal.ListaTipo.Clear;
     fDMPrincipal.ListaTipo.Add('2');
@@ -101,7 +99,6 @@ begin
     fDMPrincipal.ListaTipo.Clear;
     fDMPrincipal.ListaTipo.Add('2');
     fDMPrincipal.vTabela := 'TAB_PRECO_LOG';
-    QryDados_Log.Connection := fDMPrincipal.FDServer;
     QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
     with QryDados_Log do
     begin
@@ -133,9 +130,7 @@ begin
   {$region 'Produtos'}
   QryDados_Log := TFDQuery.Create(nil);
   try
-    QryDados_Log.Connection := fDMPrincipal.FDServer;
     AtualizaStatus('Verificando Exclusões de Produtos!');
-
     fDMPrincipal.vTabela := 'PRODUTO_LOG';
     fDMPrincipal.ListaTipo.Clear;
     fDMPrincipal.ListaTipo.Add('2');
@@ -172,9 +167,9 @@ begin
     qry.Connection := Conexao;
     qry.Close;
     qry.SQL.Clear;
-    qry.SQL.Add('delete from ' + Tabela + ' where' );
+    qry.SQL.Add('delete from ' + Tabela + ' where 0=0' );
     if TestaTerminal then
-       qry.SQL.Add(' ID_TERMINAL = ' + fDMPrincipal.vTerminal);
+       qry.SQL.Add(' and ID_TERMINAL = ' + fDMPrincipal.vTerminal);
     qry.SQL.Add(' ' + Condicao);
     try
       qry.ExecSQL;
@@ -216,7 +211,6 @@ begin
   fDMPrincipal.vTabela := 'CUPOMFISCAL_LOG';
   fDMPrincipal.ListaTipo.Clear;
   fDMPrincipal.ListaTipo.Add('2');
-  QryDados_Log.Close;
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpLocal);
   with QryDados_Log do
   begin
@@ -225,12 +219,12 @@ begin
     begin
       vNumCupom := FieldByName('NumCupom').AsInteger;
       vFilial := FieldByName('Filial').AsInteger;
-      vTipo := FieldByName('Tipo').AsString;
+      vTipo := FieldByName('Tipo_Cupom').AsString;
 
       vCondicao := ' where Numcupom = ' + IntToStr(vNumCupom);
       vCondicao := vCondicao + ' and filial = ' + IntToStr(vFilial);
       vCondicao := vCondicao + ' and Terminal_ID = ' + fDMPrincipal.vTerminal;
-      vCondicao := vCondicao + ' and Tipo = ' + vTipo;
+      vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
 
       try
         fDMPrincipal.FDServer.ExecSQL('DELETE FROM CUPOMFISCAL ' + vCondicao);
@@ -240,7 +234,9 @@ begin
           GravaLogErro('Erro Excluindo Cupom Fiscal nº: ' + IntToStr(vNumCupom));
         end;
       end;
-
+      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+      Apaga_Registro(fDMPrincipal.FDLocal, fDMPrincipal.vTabela, False, vCondicao);
+      Next;
     end;
   end;
   {$endRegion}
@@ -321,7 +317,7 @@ begin
           begin
             vTabela := 'CUPOMFISCAL_ITENS';
             AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QuotedStr('-1'),False);
+            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
             QryDadosServer := Abrir_Tabela(tpServer);
           end;
           if QryDadosServer.IsEmpty then
@@ -368,7 +364,7 @@ begin
           begin
             vTabela := 'CUPOMFISCAL_ITENS_SEM';
             AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QuotedStr('-1'),False);
+            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
             QryDadosServer := Abrir_Tabela(tpServer);
           end;
           if QryDadosServer.IsEmpty then
@@ -414,7 +410,7 @@ begin
           begin
             vTabela := 'CUPOMFISCAL_PARC';
             AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('PARCELA',QuotedStr('-1'),False);
+            AdicionaDados('PARCELA',QryDadosLocal.FieldByName('PARCELA').AsString,False);
             QryDadosServer := Abrir_Tabela(tpServer);
           end;
           if QryDadosServer.IsEmpty then
@@ -450,7 +446,7 @@ begin
         with fDMPrincipal do
         begin
           vTabela := 'CUPOMFISCAL_TROCA';
-          AdicionaDados('ID', FieldByName('ID').AsString);
+          AdicionaDados('ID_CUPOM', FieldByName('ID').AsString);
           QryDadosLocal := Abrir_Tabela(tpLocal);
         end;
 
@@ -460,8 +456,8 @@ begin
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_TROCA';
-            AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QuotedStr('-1'),False);
+            AdicionaDados('ID_CUPOM', IntToStr(vIDNovo));
+            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
             QryDadosServer := Abrir_Tabela(tpServer);
           end;
           if QryDadosServer.IsEmpty then
@@ -479,7 +475,9 @@ begin
             end;
           end;
           try
-            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+            QryDadosServer.FieldByName('ID').AsInteger := fDMPrincipal.FDServer.ExecSQLScalar('select gen_id(GEN_CUPOMFISCAL_TROCA,1) from rdb$database');
+            QryDadosServer.FieldByName('ID_CUPOM').AsInteger := vIDNovo;
+            QryDadosServer.FieldByName('ID_MOVESTOQUE').Clear;
             QryDadosServer.CachedUpdates := True;
             QryDadosServer.Post;
             QryDadosServer.ApplyUpdates(0);
@@ -507,7 +505,7 @@ begin
           begin
             vTabela := 'CUPOMFISCAL_FORMAPGTO';
             AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QuotedStr('-1'),False);
+            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
             QryDadosServer := Abrir_Tabela(tpServer);
           end;
           if QryDadosServer.IsEmpty then
@@ -541,6 +539,13 @@ begin
         //Gravar Estoque
         try
           fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
+        except
+          GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
+        end;
+
+        //Gravar Estoque Troca
+        try
+          fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''TRO'')');
         except
           GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
         end;
@@ -1138,10 +1143,12 @@ end;
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 var
   ArquivoIni : String;
+  ImpressoraIni : String;
   BaseLocal, DriverName, UserName, PassWord : String;
   BaseServer, DriverNameServer, UserNameServer, PassWordServer, IP : String;
-  Local : Integer;
+  Local, Posicao : Integer;
   Configuracoes : TIniFile;
+  ConfigImpressora : TIniFile;
   Decoder64: TIdDecoderMIME;
   Encoder64: TIdEncoderMIME;
 begin
@@ -1151,11 +1158,25 @@ begin
   left := Screen.Width - Width;
   Decoder64 := TIdDecoderMIME.Create(nil);
   ArquivoIni := ExtractFilePath(Application.ExeName) + '\Config.ini';
+  ImpressoraIni := 'C:\$Servisoft\Impressora.ini';
   if not FileExists(ArquivoIni) then
   begin
     MessageDlg('Arquivo config.ini não encontrado!', mtInformation,[mbOK],0);
     Exit;
   end;
+  if not FileExists(ImpressoraIni) then
+  begin
+    MessageDlg('Arquivo Impressora.ini não encontrado!', mtInformation,[mbOK],0);
+    Exit;
+  end;
+
+  ConfigImpressora := TIniFile.Create(ImpressoraIni);
+  try
+    fDMPrincipal.vTerminal := ConfigImpressora.ReadString('IMPRESSORA', 'Terminal', '');
+  finally
+    ConfigImpressora.Free;
+  end;
+
   Configuracoes := TIniFile.Create(ArquivoINI);
   try
     BaseLocal := Configuracoes.ReadString('SSFacil', 'DATABASE', '');
@@ -1166,9 +1187,11 @@ begin
     BaseServer := Configuracoes.ReadString('SSFacil_Servidor', 'DATABASE', '');
     DriverNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'DriverName', '');
     UserNameServer   := Configuracoes.ReadString('SSFacil_Servidor', 'UserName', '');
+    Posicao := Pos(':',BaseServer);
+    IP := Copy(BaseServer,1,Posicao - 1);
+    BaseServer := Copy(BaseServer,Posicao + 1,Length(BaseServer));
     IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
     PassWordServer   := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil_Servidor', 'PASSWORD', ''));
-    fDMPrincipal.vTerminal := Configuracoes.ReadString('SSFacil_Servidor', 'Terminal', '');
     vTempoCiclo := StrToInt(Configuracoes.ReadString('SSFacil_Servidor', 'TempoCiclo', '20000'));
   finally
     Configuracoes.Free;
@@ -1187,7 +1210,7 @@ begin
   fDMPrincipal.FDServer.Params.Clear;
   fDMPrincipal.FDServer.DriverName := 'FB';
   fDMPrincipal.FDServer.Params.Values['DriveId'] := 'FB';
-  fDMPrincipal.FDServer.Params.Values['DataBase'] := BaseServer;
+  fDMPrincipal.FDServer.Params.Values['Database'] := BaseServer;
   fDMPrincipal.FDServer.Params.Values['Server'] := IP;
   fDMPrincipal.FDServer.Params.Values['User_Name'] := UserNameServer;
   fDMPrincipal.FDServer.Params.Values['Password'] := PassWordServer;
@@ -1196,7 +1219,7 @@ begin
   lblTerminal.Caption := 'Terminal: ' + fDMPrincipal.vTerminal;
   lblLocal.caption := BaseLocal;
   lblLocal.Update;
-  lblServidor.caption := IP + ':' + BaseServer;
+  lblServidor.caption := BaseServer;
   lblServidor.Update;
   QryDados_Log := TFDQuery.Create(nil);
 
@@ -1257,6 +1280,13 @@ begin
     except
       Application.ProcessMessages;
     end;
+
+    try
+      ExcluirRegistroServidor;
+    except
+      Application.ProcessMessages;
+    end;
+
     fDMPrincipal.desconectar;
   end
   else
