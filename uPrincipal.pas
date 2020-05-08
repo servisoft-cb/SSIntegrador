@@ -537,18 +537,36 @@ begin
         end;
 
         //Gravar Estoque
-        try
-          fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
-        except
-          GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
-        end;
+        repeat
+          try
+            fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
+            erro := False;
+          except
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
+              fDMPrincipal.FDServer.Rollback;
+              erro := True;
+            end;
+          end;
+
+        until not erro;
 
         //Gravar Estoque Troca
-        try
-          fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''TRO'')');
-        except
-          GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
-        end;
+
+        repeat
+          try
+            fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''TRO'')');
+            erro := False
+          except
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
+              fDMPrincipal.FDServer.Rollback;
+              erro := True;
+            end;
+          end;
+        until not erro;
 
         //Gravar Duplicata - Histórico - Comissão - Financeiro
         try
