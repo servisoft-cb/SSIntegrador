@@ -342,6 +342,7 @@ begin
             QryDadosServer.ApplyUpdates(0);
             erro := False;
           except
+            GravaLogErro('Erro Gravando Item Cupom: ' +  QryDadosLocal.FieldByName('NUM_CUPOM').AsString + '/'+QryDadosLocal.FieldByName('ITEM').AsString);
             QryDadosServer.Cancel;
             erro := True;
             Application.ProcessMessages;
