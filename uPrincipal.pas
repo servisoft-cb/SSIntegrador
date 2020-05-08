@@ -1190,7 +1190,7 @@ begin
     Posicao := Pos(':',BaseServer);
     IP := Copy(BaseServer,1,Posicao - 1);
     BaseServer := Copy(BaseServer,Posicao + 1,Length(BaseServer));
-    IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
+//    IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
     PassWordServer   := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil_Servidor', 'PASSWORD', ''));
     vTempoCiclo := StrToInt(Configuracoes.ReadString('SSFacil_Servidor', 'TempoCiclo', '20000'));
   finally
