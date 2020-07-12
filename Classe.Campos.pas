@@ -3,7 +3,7 @@ unit Classe.Campos;
 interface
 
 uses
-  Data.DB, System.Generics.Collections;
+  Data.DB, System.Generics.Collections, Dialogs;
 
 type
   TCampos = class
@@ -30,6 +30,7 @@ end;
 destructor TCampos.Destroy;
 begin
   inherited;
+
 end;
 
 end.

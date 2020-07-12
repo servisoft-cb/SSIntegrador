@@ -65,16 +65,20 @@ begin
       Condicao := Condicao + ',' + QuotedStr(ListaTipo.Strings[i]);
   end;
   Consulta := TFDQuery.Create(nil);
-  case Conexao of
-   tpLocal : Consulta.Connection := FDLocal;
-   tpServer : Consulta.Connection := FDServer;
+  try
+    case Conexao of
+     tpLocal : Consulta.Connection := FDLocal;
+     tpServer : Consulta.Connection := FDServer;
+    end;
+    Consulta.Close;
+    Consulta.SQL.Clear;
+    Consulta.SQL.Add('SELECT * FROM ' + vTabela + ' WHERE TIPO in ( '  +  Condicao + ')') ;
+    Consulta.SQL.Add(' and id_terminal = ' + vTerminal);
+    Consulta.Open;
+    Result := Consulta;
+  finally
+
   end;
-  Consulta.Close;
-  Consulta.SQL.Clear;
-  Consulta.SQL.Add('SELECT * FROM ' + vTabela + ' WHERE TIPO in ( '  +  Condicao + ')') ;
-  Consulta.SQL.Add(' and id_terminal = ' + vTerminal);
-  Consulta.Open;
-  Result := Consulta;
 end;
 
 procedure TDMPrincipal.AdicionaDados(aValue, aCampo: String; Clear : Boolean = True);

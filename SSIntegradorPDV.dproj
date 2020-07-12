@@ -82,7 +82,7 @@
         <VerInfo_Locale>1033</VerInfo_Locale>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
-        <DCC_ExeOutput>C:\Delphi7\SSFacil\EXE</DCC_ExeOutput>
+        <DCC_ExeOutput>C:\Delphi7\SSFacil\Exe</DCC_ExeOutput>
         <DCC_DcuOutput>C:\Delphi7\SSFacil\DCU</DCC_DcuOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
@@ -99,7 +99,7 @@
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <DCC_DcuOutput>C:\Delphi7\SSFacil\dcu</DCC_DcuOutput>
-        <DCC_ExeOutput>C:\Delphi7\SSFacil\EXE</DCC_ExeOutput>
+        <DCC_ExeOutput>C:\Delphi7\SSFacil\Exe</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     </PropertyGroup>
     <ItemGroup>
@@ -112,10 +112,10 @@
         </DCCReference>
         <DCCReference Include="uDMPrincipal.pas">
             <Form>DMPrincipal</Form>
-            <FormType>dfm</FormType>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
         <DCCReference Include="Classe.Campos.pas"/>
+        <DCCReference Include="SmartPoint.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -150,7 +150,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Delphi7\SSFacil\EXE\SSIntegradorPDV.exe" Configuration="Release" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Delphi7\SSFacil\Exe\SSIntegradorPDV.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>SSIntegradorPDV.exe</RemoteName>
                         <Overwrite>true</Overwrite>

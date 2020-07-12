@@ -29,11 +29,10 @@ type
     shpLocal: TShape;
     shpServidor: TShape;
     TrayIcon: TTrayIcon;
-    procedure FormCreate(Sender: TObject);
     procedure JvThreadTimerTimer(Sender: TObject);
     procedure ApplicationEvents1Minimize(Sender: TObject);
     procedure TrayIconDblClick(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     vTempoCiclo : integer;
@@ -48,6 +47,8 @@ type
     procedure AtualizaStatus (aValue : String);
     procedure Apaga_Registro(Conexao : TFDConnection; Tabela : String; TestaTerminal : Boolean; Condicao : String = '0=1');
     procedure GravaLogErro(Erro : String);
+    procedure Inicia_Processso;
+    procedure Finaliza_Processo;
   public
     { Public declarations }
   end;
@@ -245,12 +246,33 @@ end;
 function TfrmPrincipal.ExportaMovimentosPDV: boolean;
 var
   vCondicao, vTabela, Prazo : string;
-  i, vIDNovo : integer;
+  i, vIDNovo, Cont : integer;
   erro : Boolean;
 begin
   {$region 'Cupom Fiscal'}
   try
     AtualizaStatus('Verificando Cupom Fiscal');
+    Cont := 0;
+    if Assigned(QryDados_Log) then
+    begin
+      FreeAndNil(QryDados_Log);
+      QryDados_Log := TFDQuery.Create(nil);
+    end;
+
+    if Assigned(QryDadosLocal) then
+    begin
+      FreeAndNil(QryDadosLocal);
+      QryDadosLocal := TFDQuery.Create(nil);
+      QryDadosLocal.Connection := fDMPrincipal.FDLocal;
+    end;
+
+    if Assigned(QryDadosServer) then
+    begin
+      FreeAndNil(QryDadosServer);
+      QryDadosServer := TFDQuery.Create(nil);
+      QryDadosServer.Connection := fDMPrincipal.FDServer;
+    end;
+
     with fDMPrincipal do
     begin
       vTabela := 'CUPOMFISCAL_LOG';
@@ -265,20 +287,33 @@ begin
       while not Eof do
       begin
         AtualizaStatus('Recebendo Cupom Fiscal => ' + FieldByName('ID').AsString);
-
+        Inc(Cont);
         with fDMPrincipal do
         begin
           vTabela := 'CUPOMFISCAL';
           AdicionaDados('ID',FieldByName('ID').AsString);
           QryDadosLocal := Abrir_Tabela(tpLocal);
+
+          vTabela := 'CUPOMFISCAL';
+          vCondicao := 'and NUMCUPOM = ' + QryDadosLocal.FieldByName('NUMCUPOM').AsString;
+          vCondicao := vCondicao + ' and FILIAL = ' + QryDadosLocal.FieldByName('FILIAL').AsString;
+          vCondicao := vCondicao + ' and TIPO = ' + QuotedStr(QryDadosLocal.FieldByName('TIPO').AsString);
+          vCondicao := vCondicao + ' and SERIE = ' + QuotedStr(QryDadosLocal.FieldByName('SERIE').AsString);
+          Apaga_Registro(fDMPrincipal.FDServer, vTabela, False, vCondicao);
+
           AdicionaDados('ID',QuotedStr('-1'));
           QryDadosServer := Abrir_Tabela(tpServer);
         end;
-
         if QryDadosServer.IsEmpty then
-          QryDadosServer.Insert
+        begin
+          QryDadosServer.Insert;
+          vIDNovo := 0;
+          end
         else
+        begin
           QryDadosServer.Edit;
+          vIDNovo := QryDadosServer.FieldByName('ID').AsInteger;
+        end;
 
         for I := 0 to QryDadosLocal.FieldCount - 1 do
         begin
@@ -290,9 +325,17 @@ begin
           end;
         end;
         try
-          vIDNovo := fDMPrincipal.FDServer.ExecSQLScalar('select gen_id(GEN_CUPOMFISCAL,1) from rdb$database');
+          if vIDNovo = 0 then
+            vIDNovo := fDMPrincipal.FDServer.ExecSQLScalar('select gen_id(GEN_CUPOMFISCAL,1) from rdb$database');
+
           QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
           QryDadosServer.Post;
+
+          if Cont = 5 then
+          begin
+            Application.ProcessMessages;
+            Cont := 0;
+          end;
           QryDadosServer.CachedUpdates := True;
           QryDadosServer.ApplyUpdates(0);
           erro := False;
@@ -1203,12 +1246,31 @@ begin
 
 end;
 
-procedure TfrmPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TfrmPrincipal.Finaliza_Processo;
 begin
-  fDMPrincipal.Free;
+  if Assigned(QryDados_Log) then
+    QryDados_Log.Free;
+
+  if Assigned(QryDadosLocal) then
+    QryDadosLocal.Free;
+
+  if Assigned(QryDadosServer) then
+    QryDadosServer.Free;
+
+  fDMPrincipal.desconectar;
+
+  if Assigned(fDMPrincipal) then
+    fDMPrincipal.Free;
+
 end;
 
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
+begin
+  top := Screen.Height - Height - 50;
+  left := Screen.Width - Width;
+end;
+
+procedure TfrmPrincipal.Inicia_Processso;
 var
   ArquivoIni : String;
   ImpressoraIni : String;
@@ -1220,10 +1282,9 @@ var
   Decoder64: TIdDecoderMIME;
   Encoder64: TIdEncoderMIME;
 begin
+  ReportMemoryLeaksOnShutdown := DebugHook <> 0;
   fDMPrincipal := TDMPrincipal.Create(nil);
   lblUltimaAtualizacao.Caption := 'Aguardando configurações';
-  top := Screen.Height - Height - 50;
-  left := Screen.Width - Width;
   Decoder64 := TIdDecoderMIME.Create(nil);
   ArquivoIni := ExtractFilePath(Application.ExeName) + '\Config.ini';
   ImpressoraIni := 'C:\$Servisoft\Impressora.ini';
@@ -1327,6 +1388,8 @@ begin
   lblStatus.Update;
   Application.ProcessMessages;
 
+  Inicia_Processso;
+
   if fDMPrincipal.conectar then
   begin
     shpLocal.Brush.Color := clLime;
@@ -1355,7 +1418,6 @@ begin
       Application.ProcessMessages;
     end;
 
-    fDMPrincipal.desconectar;
   end
   else
   begin
@@ -1365,8 +1427,10 @@ begin
     Application.ProcessMessages;
     shpLocal.Brush.Color := clRed;
     shpServidor.Brush.Color := clRed;
+    Finaliza_Processo;
     exit;
   end;
+  Finaliza_Processo;
   Application.Title := 'Aguardando Proximo Ciclo';
   lblStatus.Caption := 'Aguardando Proximo Ciclo';
   lblStatus.Update;
@@ -1383,5 +1447,6 @@ begin
   WindowState := wsNormal;
   Application.BringToFront();
 end;
+
 
 end.
