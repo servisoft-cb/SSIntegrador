@@ -1383,61 +1383,67 @@ procedure TfrmPrincipal.JvThreadTimerTimer(Sender: TObject);
 begin
   TrayIcon.Animate := True;
   JvThreadTimer.Enabled := False;
-  Application.Title := 'Estabelecendo conexões...';
-  lblStatus.Caption := 'Estabelecendo conexões...';
-  lblStatus.Update;
-  Application.ProcessMessages;
-
-  Inicia_Processso;
-
-  if fDMPrincipal.conectar then
-  begin
-    shpLocal.Brush.Color := clLime;
-    shpServidor.Brush.Color := clLime;
-    try
-      ApagaRegistrosExcluidosNoServidor;
-    except
-      Application.ProcessMessages;
-    end;
-
-    try
-      ImportaServidorTabelaProduto;
-    except
-      Application.ProcessMessages;
-    end;
-
-    try
-      ExportaMovimentosPDV;
-    except
-      Application.ProcessMessages;
-    end;
-
-    try
-      ExcluirRegistroServidor;
-    except
-      Application.ProcessMessages;
-    end;
-
-  end
-  else
-  begin
-    Application.Title := 'Falha na Conexão...';
-    lblStatus.Caption := 'Falha na Conexão...';
+  try
+    Application.Title := 'Estabelecendo conexões...';
+    lblStatus.Caption := 'Estabelecendo conexões...';
     lblStatus.Update;
     Application.ProcessMessages;
-    shpLocal.Brush.Color := clRed;
-    shpServidor.Brush.Color := clRed;
+
+    Inicia_Processso;
+    if fDMPrincipal.conectar then
+    begin
+      shpLocal.Brush.Color := clLime;
+      shpServidor.Brush.Color := clLime;
+      try
+        ApagaRegistrosExcluidosNoServidor;
+      except
+        Application.ProcessMessages;
+      end;
+
+      try
+        ImportaServidorTabelaProduto;
+      except
+        Application.ProcessMessages;
+      end;
+
+      try
+        ExportaMovimentosPDV;
+      except
+        Application.ProcessMessages;
+      end;
+
+      try
+        ExcluirRegistroServidor;
+      except
+        Application.ProcessMessages;
+      end;
+
+    end
+    else
+    begin
+      Application.Title := 'Falha na Conexão...';
+      lblStatus.Caption := 'Falha na Conexão...';
+      lblStatus.Update;
+      Application.ProcessMessages;
+      shpLocal.Brush.Color := clRed;
+      shpServidor.Brush.Color := clRed;
+      lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ',Now);
+      Application.ProcessMessages;
+      TrayIcon.Animate := False;
+      JvThreadTimer.Enabled := True;
+      Finaliza_Processo;
+      exit;
+    end;
+  finally
     Finaliza_Processo;
-    exit;
+    Application.Title := 'Aguardando Proximo Ciclo';
+    lblStatus.Caption := 'Aguardando Proximo Ciclo';
+    lblStatus.Update;
+    lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ',Now);
+    Application.ProcessMessages;
+    TrayIcon.Animate := False;
+    JvThreadTimer.Enabled := True;
   end;
-  Finaliza_Processo;
-  Application.Title := 'Aguardando Proximo Ciclo';
-  lblStatus.Caption := 'Aguardando Proximo Ciclo';
-  lblStatus.Update;
-  lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ',Now);
-  Application.ProcessMessages;
-  TrayIcon.Animate := False;
-  JvThreadTimer.Enabled := True;
 end;
 
 procedure TfrmPrincipal.TrayIconDblClick(Sender: TObject);
