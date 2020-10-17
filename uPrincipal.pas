@@ -141,12 +141,12 @@ begin
       if not (IsEmpty) then
       while not Eof do
       begin
-        AtualizaStatus('Excluindo Produto => ' + FieldByName('ID_PRODUTO').AsString);
-        vCondicao := 'ID = ' + FieldByName('ID_PRODUTO').AsString;
+        AtualizaStatus('Excluindo Produto => ' + FieldByName('ID').AsString);
+        vCondicao := 'ID = ' + FieldByName('ID').AsString;
         vTabela := 'PRODUTO';
         Apaga_Registro(fDMPrincipal.FDLocal,vTabela, False, vCondicao);
         vTabela := 'PRODUTO_LOG';
-        vCondicao := ' and ID_PRODUTO = ' + FieldByName('ID_PRODUTO').AsString;
+        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
         Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
         Next;
       end;
