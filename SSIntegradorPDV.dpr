@@ -10,7 +10,8 @@ uses
   uDMPrincipal in 'uDMPrincipal.pas' {DMPrincipal: TDataModule},
   Classe.Campos in 'Classe.Campos.pas',
   System.SysUtils,
-  SmartPoint in 'SmartPoint.pas';
+  SmartPoint in 'SmartPoint.pas',
+  Classe.Versao in 'Classe.Versao.pas';
 
 {$R *.res}
 var

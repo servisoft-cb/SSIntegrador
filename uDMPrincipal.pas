@@ -42,7 +42,7 @@ var
 implementation
 
 uses
-  Vcl.Dialogs;
+  Vcl.Dialogs, System.Types;
 
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 

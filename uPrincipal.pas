@@ -10,7 +10,7 @@ uses
   Vcl.Buttons, FireDAC.Stan.Intf, FireDAC.Stan.Option,
   FireDAC.Stan.Param, FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf,
   FireDAC.DApt.Intf, FireDAC.Stan.Async, FireDAC.DApt, Data.DB,
-  FireDAC.Comp.DataSet, FireDAC.Comp.Client;
+  FireDAC.Comp.DataSet, FireDAC.Comp.Client, Classe.Versao;
 
 type
   TfrmPrincipal = class(TForm)
@@ -33,6 +33,7 @@ type
     procedure ApplicationEvents1Minimize(Sender: TObject);
     procedure TrayIconDblClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
     vTempoCiclo : integer;
@@ -249,6 +250,92 @@ var
   i, vIDNovo, Cont : integer;
   erro : Boolean;
 begin
+  {$region 'Pessoa'}
+    AtualizaStatus('Verificando Clientes');
+    Cont := 0;
+    if Assigned(QryDados_Log) then
+    begin
+      FreeAndNil(QryDados_Log);
+      QryDados_Log := TFDQuery.Create(nil);
+    end;
+    if Assigned(QryDadosLocal) then
+    begin
+      FreeAndNil(QryDadosLocal);
+      QryDadosLocal := TFDQuery.Create(nil);
+      QryDadosLocal.Connection := fDMPrincipal.FDLocal;
+    end;
+    if Assigned(QryDadosServer) then
+    begin
+      FreeAndNil(QryDadosServer);
+      QryDadosServer := TFDQuery.Create(nil);
+      QryDadosServer.Connection := fDMPrincipal.FDServer;
+    end;
+
+    with fDMPrincipal do
+    begin
+      vTabela := 'PESSOA_LOG';
+      ListaTipo.Clear;
+      ListaTipo.Add('0');
+      ListaTipo.Add('1');
+      QryDados_Log := Abrir_Tabela_Log(tpLocal);
+    end;
+
+    with QryDados_Log do
+    begin
+      if not (IsEmpty) then
+      while not Eof do
+      begin
+        AtualizaStatus('Enviando Pessoa => ' + FieldByName('ID').AsString);
+        Inc(Cont);
+        with fDMPrincipal do
+        begin
+          vTabela := 'PESSOA';
+          AdicionaDados('CODIGO',FieldByName('ID').AsString);
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+
+          vTabela := 'PESSOA';
+          AdicionaDados('CODIGO',FieldByName('ID').AsString );
+          QryDadosServer := Abrir_Tabela(tpServer);
+        end;
+
+        if QryDadosServer.IsEmpty then
+          QryDadosServer.Insert
+        else
+          QryDadosServer.Edit;
+
+        for I := 0 to QryDadosLocal.FieldCount - 1 do
+        begin
+          try
+            QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+               QryDadosLocal.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
+
+        try
+          QryDadosServer.Post;
+
+          if Cont = 5 then
+          begin
+            Application.ProcessMessages;
+            Cont := 0;
+          end;
+          QryDadosServer.CachedUpdates := True;
+          QryDadosServer.ApplyUpdates(0);
+          erro := False;
+        except
+          QryDadosServer.Cancel;
+          erro := True;
+          Application.ProcessMessages;
+        end;
+      end;
+    end;
+
+  {$EndREgion}
+
+
+
   {$region 'Cupom Fiscal'}
   try
     AtualizaStatus('Verificando Cupom Fiscal');
@@ -1268,6 +1355,18 @@ procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
   top := Screen.Height - Height - 50;
   left := Screen.Width - Width;
+end;
+
+procedure TfrmPrincipal.FormShow(Sender: TObject);
+var
+  aVersao : TVersao;
+begin
+  aVersao := TVersao.Create;
+  try
+    Self.Caption := 'SSIntegradorPDV v.' + aVersao.GetBuildInfo(Application.ExeName);
+  finally
+    aVersao.Free;
+  end;
 end;
 
 procedure TfrmPrincipal.Inicia_Processso;
