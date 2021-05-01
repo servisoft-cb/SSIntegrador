@@ -329,11 +329,14 @@ begin
           erro := True;
           Application.ProcessMessages;
         end;
+        vTabela := 'PESSOA_LOG';
+        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
+        Next;
       end;
     end;
 
   {$EndREgion}
-
 
 
   {$region 'Cupom Fiscal'}
@@ -1329,6 +1332,55 @@ begin
     end;
   end;
   AtualizaStatus('');
+  {$endregion}
+
+  {$Region 'Inclui/Altera Tipo Cobrança'}
+  AtualizaStatus('Verificando Alterações em Tipo Cobrança');
+  fDMPrincipal.vTabela := 'TIPOCOBRANCA';
+  fDMPrincipal.AdicionaDados('','');
+  QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
+  with QryDadosServer do
+  begin
+    if not (IsEmpty) then
+    while not Eof do
+    begin
+      AtualizaStatus('Recebendo Tipo Cobranca => ' + FieldByName('ID').AsString);
+
+      with fDMPrincipal do
+      begin
+        AdicionaDados('ID',FieldByName('ID').AsString);
+        QryDadosLocal := Abrir_Tabela(tpLocal);
+      end;
+      if QryDadosLocal.IsEmpty then
+        QryDadosLocal.Insert
+      else
+        QryDadosLocal.Edit;
+
+      for I := 0 to QryDadosServer.FieldCount - 1 do
+      begin
+        try
+          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+             QryDadosServer.Fields[i].AsVariant;
+        except
+          Application.ProcessMessages;
+        end;
+      end;
+      try
+        QryDadosLocal.Post;
+        QryDadosLocal.CachedUpdates := True;
+        QryDadosLocal.ApplyUpdates(0);
+        erro := False;
+      except
+        QryDadosLocal.Cancel;
+        erro := True;
+        Application.ProcessMessages;
+      end;
+      Next;
+    end;
+  end;
+  AtualizaStatus('');
+  QryDadosLocal.Close;
+  QryDadosServer.Close;
   {$endregion}
 
 end;
