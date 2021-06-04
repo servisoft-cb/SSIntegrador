@@ -1263,8 +1263,9 @@ begin
       for I := 0 to QryDadosServer.FieldCount - 1 do
       begin
         try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+          if not (QryDadosServer.Fields[i].FieldName = 'VERSAO_BANCO') then
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+               QryDadosServer.Fields[i].AsVariant;
         except
           Application.ProcessMessages;
         end;
