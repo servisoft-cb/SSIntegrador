@@ -79,7 +79,7 @@ begin
       while not Eof do
       begin
         AtualizaStatus('Excluindo Cliente => ' + FieldByName('ID').AsString);
-        vCondicao := 'codigo = ' + FieldByName('ID').AsString;
+        vCondicao := ' and codigo = ' + FieldByName('ID').AsString;
         vTabela := 'PESSOA';
         Apaga_Registro(fDMPrincipal.FDLocal, vTabela, false, vCondicao);
         vTabela := 'PESSOA_LOG';
@@ -109,11 +109,11 @@ begin
       begin
         AtualizaStatus('Excluindo Lista de Preço => ' + FieldByName('ID_TABPRECO').AsString);
 
-        vCondicao := 'ID = ' + FieldByName('ID_TABPRECO').AsString;
+        vCondicao := ' and ID = ' + FieldByName('ID_TABPRECO').AsString;
         vTabela := 'TAB_PRECO_ITENS';
         Apaga_Registro(fDMPrincipal.FDLocal, vTabela, False, vCondicao);
 
-        vCondicao := 'ID = ' + FieldByName('ID_TABPRECO').AsString;
+        vCondicao := ' and ID = ' + FieldByName('ID_TABPRECO').AsString;
         vTabela := 'TAB_PRECO';
         Apaga_Registro(fDMPrincipal.FDLocal,vTabela,False, vCondicao);
 
@@ -143,7 +143,7 @@ begin
       while not Eof do
       begin
         AtualizaStatus('Excluindo Produto => ' + FieldByName('ID').AsString);
-        vCondicao := 'ID = ' + FieldByName('ID').AsString;
+        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
         vTabela := 'PRODUTO';
         Apaga_Registro(fDMPrincipal.FDLocal,vTabela, False, vCondicao);
         vTabela := 'PRODUTO_LOG';
@@ -236,7 +236,7 @@ begin
           GravaLogErro('Erro Excluindo Cupom Fiscal nº: ' + IntToStr(vNumCupom));
         end;
       end;
-      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+      vCondicao := ' and ID = ' + FieldByName('ID').AsString;
       Apaga_Registro(fDMPrincipal.FDLocal, fDMPrincipal.vTabela, False, vCondicao);
       Next;
     end;
@@ -330,7 +330,7 @@ begin
           Application.ProcessMessages;
         end;
         vTabela := 'PESSOA_LOG';
-        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
         Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
         Next;
       end;
