@@ -309,7 +309,11 @@ begin
             QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
                QryDadosLocal.Fields[i].AsVariant;
           except
-            Application.ProcessMessages;
+            on E : Exception do
+            begin
+              GravaLogErro('Erro campo Cliente: ' + e.Message);
+              Application.ProcessMessages;
+            end;
           end;
         end;
 
@@ -325,13 +329,20 @@ begin
           QryDadosServer.ApplyUpdates(0);
           erro := False;
         except
-          QryDadosServer.Cancel;
-          erro := True;
-          Application.ProcessMessages;
+          on E : Exception do
+          begin
+            QryDadosServer.Cancel;
+            erro := True;
+            Application.ProcessMessages;
+            GravaLogErro('Erro Gravando Cliente: ' + e.Message);
+          end;
         end;
-        vTabela := 'PESSOA_LOG';
-        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
-        Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
+        if not erro then
+        begin
+          vTabela := 'PESSOA_LOG';
+          vCondicao := ' and ID = ' + FieldByName('ID').AsString;
+          Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
+        end;
         Next;
       end;
     end;
@@ -419,6 +430,7 @@ begin
             vIDNovo := fDMPrincipal.FDServer.ExecSQLScalar('select gen_id(GEN_CUPOMFISCAL,1) from rdb$database');
 
           QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+          QryDadosServer.FieldByName('id_fechamento').Clear;
           QryDadosServer.Post;
 
           if Cont = 5 then
@@ -430,9 +442,13 @@ begin
           QryDadosServer.ApplyUpdates(0);
           erro := False;
         except
-          QryDadosServer.Cancel;
-          erro := True;
-          Application.ProcessMessages;
+          on E : Exception do
+          begin
+            GravaLogErro('Erro Gravando CupomFiscal: ' + e.Message);
+            QryDadosServer.Cancel;
+            erro := True;
+            Application.ProcessMessages;
+          end;
         end;
 
         //Gravar itens
@@ -475,10 +491,13 @@ begin
             QryDadosServer.ApplyUpdates(0);
             erro := False;
           except
-            GravaLogErro('Erro Gravando Item Cupom: ' +  QryDadosLocal.FieldByName('NUM_CUPOM').AsString + '/'+QryDadosLocal.FieldByName('ITEM').AsString);
-            QryDadosServer.Cancel;
-            erro := True;
-            Application.ProcessMessages;
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Cupom Fiscal Item: ' + e.Message);
+              QryDadosServer.Cancel;
+              erro := True;
+              Application.ProcessMessages;
+            end;
           end;
           QryDadosLocal.Next;
         end;
@@ -522,9 +541,13 @@ begin
             QryDadosServer.ApplyUpdates(0);
             erro := False;
           except
-            QryDadosServer.Cancel;
-            erro := True;
-            Application.ProcessMessages;
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Cupom Fiscal Item Sem: ' + e.Message);
+              QryDadosServer.Cancel;
+              erro := True;
+              Application.ProcessMessages;
+            end;
           end;
           QryDadosLocal.Next;
         end;
@@ -569,9 +592,13 @@ begin
             QryDadosServer.ApplyUpdates(0);
             erro := False;
           except
-            QryDadosServer.Cancel;
-            erro := True;
-            Application.ProcessMessages;
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Cupom Fiscal Parc: ' + e.Message);
+              QryDadosServer.Cancel;
+              erro := True;
+              Application.ProcessMessages;
+            end;
           end;
           QryDadosLocal.Next;
         end;
@@ -617,9 +644,13 @@ begin
             QryDadosServer.ApplyUpdates(0);
             erro := False;
           except
-            QryDadosServer.Cancel;
-            erro := True;
-            Application.ProcessMessages;
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Cupom Fiscal Troca: ' + e.Message);
+              QryDadosServer.Cancel;
+              erro := True;
+              Application.ProcessMessages;
+            end;
           end;
           QryDadosLocal.Next;
         end;
@@ -663,9 +694,13 @@ begin
             QryDadosServer.ApplyUpdates(0);
             erro := False;
           except
-            QryDadosServer.Cancel;
-            erro := True;
-            Application.ProcessMessages;
+            on E : Exception do
+            begin
+              GravaLogErro('Erro Gravando Cupom Fiscal Troca: ' + e.Message);
+              QryDadosServer.Cancel;
+              erro := True;
+              Application.ProcessMessages;
+            end;
           end;
           QryDadosLocal.Next;
         end;
@@ -713,9 +748,12 @@ begin
           GravaLogErro('Erro Gravando Duplicata estoque nº: ' + IntToStr(vIDNovo));
           end;
         end;
-        vTabela := 'CUPOMFISCAL_LOG';
-        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
-        Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
+        if not erro then
+        begin
+          vTabela := 'CUPOMFISCAL_LOG';
+          vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+          Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
+        end;
         Next;
       end;
     end;
