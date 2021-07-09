@@ -227,6 +227,7 @@ begin
       vCondicao := vCondicao + ' and filial = ' + IntToStr(vFilial);
       vCondicao := vCondicao + ' and Terminal_ID = ' + fDMPrincipal.vTerminal;
       vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
+      vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
 
       try
         fDMPrincipal.FDServer.ExecSQL('DELETE FROM CUPOMFISCAL ' + vCondicao);
@@ -248,7 +249,7 @@ function TfrmPrincipal.ExportaMovimentosPDV: boolean;
 var
   vCondicao, vTabela, Prazo : string;
   i, vIDNovo, Cont : integer;
-  erro : Boolean;
+  erro, erroProcedure : Boolean;
 begin
   {$region 'Pessoa'}
     AtualizaStatus('Verificando Clientes');
@@ -489,7 +490,6 @@ begin
             QryDadosServer.CachedUpdates := True;
             QryDadosServer.Post;
             QryDadosServer.ApplyUpdates(0);
-            erro := False;
           except
             on E : Exception do
             begin
@@ -539,7 +539,6 @@ begin
             QryDadosServer.CachedUpdates := True;
             QryDadosServer.Post;
             QryDadosServer.ApplyUpdates(0);
-            erro := False;
           except
             on E : Exception do
             begin
@@ -590,7 +589,6 @@ begin
             QryDadosServer.CachedUpdates := True;
             QryDadosServer.Post;
             QryDadosServer.ApplyUpdates(0);
-            erro := False;
           except
             on E : Exception do
             begin
@@ -642,7 +640,6 @@ begin
             QryDadosServer.CachedUpdates := True;
             QryDadosServer.Post;
             QryDadosServer.ApplyUpdates(0);
-            erro := False;
           except
             on E : Exception do
             begin
@@ -692,7 +689,6 @@ begin
             QryDadosServer.CachedUpdates := True;
             QryDadosServer.Post;
             QryDadosServer.ApplyUpdates(0);
-            erro := False;
           except
             on E : Exception do
             begin
@@ -709,33 +705,33 @@ begin
         repeat
           try
             fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
-            erro := False;
+            erroProcedure := False;
           except
             on E : Exception do
             begin
               GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
               fDMPrincipal.FDServer.Rollback;
-              erro := True;
+              erroProcedure := True;
             end;
           end;
 
-        until not erro;
+        until not erroProcedure;
 
         //Gravar Estoque Troca
 
         repeat
           try
             fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''TRO'')');
-            erro := False
+            erroProcedure := False
           except
             on E : Exception do
             begin
               GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
               fDMPrincipal.FDServer.Rollback;
-              erro := True;
+              erroProcedure := True;
             end;
           end;
-        until not erro;
+        until not erroProcedure;
 
         //Gravar Duplicata - Histórico - Comissão - Financeiro
         try
