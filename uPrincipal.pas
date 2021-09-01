@@ -15,7 +15,6 @@ uses
 type
   TfrmPrincipal = class(TForm)
     ApplicationEvents1: TApplicationEvents;
-    JvThreadTimer: TJvThreadTimer;
     PopupMenu1: TPopupMenu;
     pnlPrincipal: TPanel;
     lblTerminal: TLabel;
@@ -29,6 +28,7 @@ type
     shpLocal: TShape;
     shpServidor: TShape;
     TrayIcon: TTrayIcon;
+    JvThreadTimer: TJvThreadTimer;
     procedure JvThreadTimerTimer(Sender: TObject);
     procedure ApplicationEvents1Minimize(Sender: TObject);
     procedure TrayIconDblClick(Sender: TObject);
@@ -167,6 +167,7 @@ begin
   qry := TFDQuery.Create(nil);
   try
     qry.Connection := Conexao;
+    qry.CachedUpdates := True;
     qry.Close;
     qry.SQL.Clear;
     qry.SQL.Add('delete from ' + Tabela + ' where 0=0' );
@@ -512,7 +513,7 @@ begin
 
         while not QryDadosLocal.Eof do
         begin
-          AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
+          AtualizaStatus('Recebendo Itens do Cupom Sem => ' + FieldByName('ID').AsString);
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_ITENS_SEM';
@@ -662,7 +663,7 @@ begin
 
         while not QryDadosLocal.Eof do
         begin
-          AtualizaStatus('Recebendo Troca do Cupom => ' + FieldByName('ID').AsString);
+          AtualizaStatus('Recebendo Forma Pagto do Cupom => ' + FieldByName('ID').AsString);
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_FORMAPGTO';
@@ -704,6 +705,7 @@ begin
         //Gravar Estoque
         repeat
           try
+            AtualizaStatus('Gravando Estoque => ' + FieldByName('ID').AsString);
             fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
             erroProcedure := False;
           except
@@ -721,6 +723,7 @@ begin
 
         repeat
           try
+            AtualizaStatus('Gravando Estoque Troca  => ' + FieldByName('ID').AsString);
             fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''TRO'')');
             erroProcedure := False
           except
@@ -735,6 +738,7 @@ begin
 
         //Gravar Duplicata - Histórico - Comissão - Financeiro
         try
+          AtualizaStatus('Gravando Duplicata => ' + FieldByName('ID').AsString);
           fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_DUPLICATA_CUPOM('+
                                          QuotedStr('')+ ', ' + IntToStr(vIDNovo) + ', ' +
                                          fDMPrincipal.vTerminal + ')');

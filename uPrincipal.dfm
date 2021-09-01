@@ -1,8 +1,8 @@
 object frmPrincipal: TfrmPrincipal
   Left = 0
   Top = 0
-  ClientHeight = 113
-  ClientWidth = 372
+  ClientHeight = 129
+  ClientWidth = 422
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,14 +17,16 @@ object frmPrincipal: TfrmPrincipal
   object pnlPrincipal: TPanel
     Left = 0
     Top = 0
-    Width = 372
-    Height = 113
+    Width = 422
+    Height = 129
     Align = alClient
     TabOrder = 0
+    ExplicitWidth = 372
+    ExplicitHeight = 113
     object lblTerminal: TLabel
       Left = 1
       Top = 1
-      Width = 370
+      Width = 420
       Height = 19
       Align = alTop
       Alignment = taCenter
@@ -78,8 +80,8 @@ object frmPrincipal: TfrmPrincipal
     end
     object lblStatus: TLabel
       Left = 1
-      Top = 93
-      Width = 370
+      Top = 109
+      Width = 420
       Height = 19
       Align = alBottom
       Alignment = taCenter
@@ -92,6 +94,7 @@ object frmPrincipal: TfrmPrincipal
       Font.Style = [fsBold]
       ParentColor = False
       ParentFont = False
+      ExplicitTop = 93
       ExplicitWidth = 52
     end
     object lblLocal: TLabel
@@ -156,12 +159,6 @@ object frmPrincipal: TfrmPrincipal
     OnMinimize = ApplicationEvents1Minimize
     Left = 312
     Top = 64
-  end
-  object JvThreadTimer: TJvThreadTimer
-    Enabled = True
-    OnTimer = JvThreadTimerTimer
-    Left = 312
-    Top = 16
   end
   object PopupMenu1: TPopupMenu
     Left = 264
@@ -310,6 +307,12 @@ object frmPrincipal: TfrmPrincipal
     PopupMenu = PopupMenu1
     OnDblClick = TrayIconDblClick
     Left = 256
+    Top = 16
+  end
+  object JvThreadTimer: TJvThreadTimer
+    Enabled = True
+    OnTimer = JvThreadTimerTimer
+    Left = 320
     Top = 16
   end
 end
