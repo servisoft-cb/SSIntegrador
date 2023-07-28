@@ -10,6 +10,7 @@ object frmPrincipal: TfrmPrincipal
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
   PixelsPerInch = 96
@@ -21,8 +22,6 @@ object frmPrincipal: TfrmPrincipal
     Height = 129
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 372
-    ExplicitHeight = 113
     object lblTerminal: TLabel
       Left = 1
       Top = 1
@@ -94,7 +93,6 @@ object frmPrincipal: TfrmPrincipal
       Font.Style = [fsBold]
       ParentColor = False
       ParentFont = False
-      ExplicitTop = 93
       ExplicitWidth = 52
     end
     object lblLocal: TLabel
@@ -309,10 +307,9 @@ object frmPrincipal: TfrmPrincipal
     Left = 256
     Top = 16
   end
-  object JvThreadTimer: TJvThreadTimer
-    Enabled = True
-    OnTimer = JvThreadTimerTimer
-    Left = 320
-    Top = 16
+  object Timer: TTimer
+    OnTimer = TimerTimer
+    Left = 360
+    Top = 24
   end
 end

@@ -19,7 +19,7 @@ type
     procedure DataModuleCreate(Sender: TObject);
     procedure DataModuleDestroy(Sender: TObject);
   private
-    { Private declarations }
+    FConsulta : TFDQuery;
   public
     vTabela : String;
     vCondicao : String;
@@ -42,7 +42,8 @@ var
 implementation
 
 uses
-  Vcl.Dialogs, System.Types;
+  Vcl.Dialogs,
+  System.Types;
 
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 
@@ -52,7 +53,7 @@ uses
 
 function TDMPrincipal.Abrir_Tabela_Log(Conexao : TEnumConexao) : TFDQuery;
 var
-  Consulta : TFDQuery;
+//  Consulta : TFDQuery;
   i : integer;
   Condicao : String;
 begin
@@ -64,20 +65,20 @@ begin
     else
       Condicao := Condicao + ',' + QuotedStr(ListaTipo.Strings[i]);
   end;
-  Consulta := TFDQuery.Create(nil);
+  FConsulta := TFDQuery.Create(nil);
   try
     case Conexao of
-     tpLocal : Consulta.Connection := FDLocal;
-     tpServer : Consulta.Connection := FDServer;
+     tpLocal : FConsulta.Connection := FDLocal;
+     tpServer : FConsulta.Connection := FDServer;
     end;
-    Consulta.Close;
-    Consulta.SQL.Clear;
-    Consulta.SQL.Add('SELECT * FROM ' + vTabela + ' WHERE TIPO in ( '  +  Condicao + ')') ;
-    Consulta.SQL.Add(' and id_terminal = ' + vTerminal);
-    Consulta.Open;
-    Result := Consulta;
+    FConsulta.Close;
+    FConsulta.SQL.Clear;
+    FConsulta.SQL.Add('SELECT * FROM ' + vTabela + ' WHERE TIPO in ( '  +  Condicao + ')') ;
+    FConsulta.SQL.Add(' and id_terminal = ' + vTerminal);
+    FConsulta.Open;
+    Result := FConsulta;
   finally
-
+//    FConsulta.Free;
   end;
 end;
 

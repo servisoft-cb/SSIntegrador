@@ -3,16 +3,42 @@ unit uPrincipal;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus,
-  JvComponentBase, JvThreadTimer, Vcl.AppEvnts, IniFiles, IdCoderMIME,
-  uDMPrincipal, TrataException,
-  Vcl.Buttons, FireDAC.Stan.Intf, FireDAC.Stan.Option,
-  FireDAC.Stan.Param, FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf,
-  FireDAC.DApt.Intf, FireDAC.Stan.Async, FireDAC.DApt, Data.DB,
-  FireDAC.Comp.DataSet, FireDAC.Comp.Client, Classe.Versao;
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Variants,
+  System.Classes,
+  System.SyncObjs,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
+  Vcl.Menus,
+  Vcl.AppEvnts,
+  IniFiles,
+  IdCoderMIME,
+  uDMPrincipal,
+  TrataException,
+  Vcl.Buttons,
+  FireDAC.Stan.Intf,
+  FireDAC.Stan.Option,
+  FireDAC.Stan.Param,
+  FireDAC.Stan.Error,
+  FireDAC.DatS,
+  FireDAC.Phys.Intf,
+  FireDAC.DApt.Intf,
+  FireDAC.Stan.Async,
+  FireDAC.DApt,
+  Data.DB,
+  GravarLog,
+  FireDAC.Comp.DataSet,
+  FireDAC.Comp.Client,
+  Classe.Versao;
 
 type
+
   TfrmPrincipal = class(TForm)
     ApplicationEvents1: TApplicationEvents;
     PopupMenu1: TPopupMenu;
@@ -28,30 +54,37 @@ type
     shpLocal: TShape;
     shpServidor: TShape;
     TrayIcon: TTrayIcon;
-    JvThreadTimer: TJvThreadTimer;
+    Timer: TTimer;
     procedure JvThreadTimerTimer(Sender: TObject);
     procedure ApplicationEvents1Minimize(Sender: TObject);
     procedure TrayIconDblClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure TimerTimer(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
-    vTempoCiclo : integer;
-    fDMPrincipal : TDMPrincipal;
-    QryDados_Log : TFDQuery;
-    QryDadosLocal : TFDQuery;
-    QryDadosServer : TFDQuery;
-    function ImportaServidorTabelaProduto: boolean;
-    function ApagaRegistrosExcluidosNoServidor: boolean;
-    function ExportaMovimentosPDV: boolean;
-    function ExcluirRegistroServidor : boolean;
-    procedure AtualizaStatus (aValue : String);
-    procedure Apaga_Registro(Conexao : TFDConnection; Tabela : String; TestaTerminal : Boolean; Condicao : String = '0=1');
-    procedure GravaLogErro(Erro : String);
+    vTempoCiclo: integer;
+    fDMPrincipal: TDMPrincipal;
+    QryDados_Log: TFDQuery;
+    QryDadosLocal: TFDQuery;
+    QryDadosServer: TFDQuery;
+    FTerminate: Boolean;
+    LThread: TThread;
+    function ImportaServidorTabelaProduto: Boolean;
+    function ApagaRegistrosExcluidosNoServidor: Boolean;
+    function ExportaMovimentosPDV: Boolean;
+    function ExcluirRegistroServidor: Boolean;
+    procedure AtualizaStatus(aValue: String);
+    procedure Apaga_Registro(Conexao: TFDConnection; Tabela: String; TestaTerminal: Boolean;
+      Condicao: String = '0=1');
+    procedure GravaLogErro(Erro: String);
     procedure Inicia_Processso;
+    procedure LongRunningTask(TerminatingEvent: TEvent);
     procedure Finaliza_Processo;
-  public
-    { Public declarations }
+    procedure FinalizaThread(Sender: TObject);
+    procedure AtualizaLabel(aValue: String);
+
   end;
 
 var
@@ -61,11 +94,11 @@ implementation
 
 {$R *.dfm}
 
-function TfrmPrincipal.ApagaRegistrosExcluidosNoServidor: boolean;
+function TfrmPrincipal.ApagaRegistrosExcluidosNoServidor: Boolean;
 var
-  vTabela, vCondicao : String;
+  vTabela, vCondicao: String;
 begin
-  {$region 'Clientes'}
+{$REGION 'Clientes'}
   AtualizaStatus('Verificando Exclusões de Clientes!');
   try
     QryDados_Log.Close;
@@ -75,26 +108,25 @@ begin
     QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
     with QryDados_Log do
     begin
-      if not (IsEmpty) then
-      while not Eof do
-      begin
-        AtualizaStatus('Excluindo Cliente => ' + FieldByName('ID').AsString);
-        vCondicao := ' and codigo = ' + FieldByName('ID').AsString;
-        vTabela := 'PESSOA';
-        Apaga_Registro(fDMPrincipal.FDLocal, vTabela, false, vCondicao);
-        vTabela := 'PESSOA_LOG';
-        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
-        Apaga_Registro(fDMPrincipal.FDServer,vTabela, true, vCondicao);
-        Next;
-      end;
+      if not(IsEmpty) then
+        while not Eof do
+        begin
+          AtualizaStatus('Excluindo Cliente => ' + FieldByName('ID').AsString);
+          vCondicao := ' and codigo = ' + FieldByName('ID').AsString;
+          vTabela := 'PESSOA';
+          Apaga_Registro(fDMPrincipal.FDLocal, vTabela, false, vCondicao);
+          vTabela := 'PESSOA_LOG';
+          vCondicao := ' and ID = ' + FieldByName('ID').AsString;
+          Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+          Next;
+        end;
     end;
     AtualizaStatus('');
   finally
     QryDados_Log.Free;
   end;
-  {$endregion}
-
-  {$region 'Lista Preço'}
+{$ENDREGION}
+{$REGION 'Lista Preço'}
   QryDados_Log := TFDQuery.Create(nil);
   try
     AtualizaStatus('Verificando Exclusões de Lista de Preço!');
@@ -104,32 +136,31 @@ begin
     QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
     with QryDados_Log do
     begin
-      if not (IsEmpty) then
-      while not Eof do
-      begin
-        AtualizaStatus('Excluindo Lista de Preço => ' + FieldByName('ID_TABPRECO').AsString);
+      if not(IsEmpty) then
+        while not Eof do
+        begin
+          AtualizaStatus('Excluindo Lista de Preço => ' + FieldByName('ID_TABPRECO').AsString);
 
-        vCondicao := ' and ID = ' + FieldByName('ID_TABPRECO').AsString;
-        vTabela := 'TAB_PRECO_ITENS';
-        Apaga_Registro(fDMPrincipal.FDLocal, vTabela, False, vCondicao);
+          vCondicao := ' and ID = ' + FieldByName('ID_TABPRECO').AsString;
+          vTabela := 'TAB_PRECO_ITENS';
+          Apaga_Registro(fDMPrincipal.FDLocal, vTabela, false, vCondicao);
 
-        vCondicao := ' and ID = ' + FieldByName('ID_TABPRECO').AsString;
-        vTabela := 'TAB_PRECO';
-        Apaga_Registro(fDMPrincipal.FDLocal,vTabela,False, vCondicao);
+          vCondicao := ' and ID = ' + FieldByName('ID_TABPRECO').AsString;
+          vTabela := 'TAB_PRECO';
+          Apaga_Registro(fDMPrincipal.FDLocal, vTabela, false, vCondicao);
 
-        vTabela := 'TAB_PRECO_LOG';
-        vCondicao := ' and ID_TABPRECO = ' + FieldByName('ID_TABPRECO').AsString;
-        Apaga_Registro(fDMPrincipal.FDServer, vTabela, True, vCondicao);
-        Next;
-      end;
+          vTabela := 'TAB_PRECO_LOG';
+          vCondicao := ' and ID_TABPRECO = ' + FieldByName('ID_TABPRECO').AsString;
+          Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+          Next;
+        end;
     end;
     AtualizaStatus('');
   finally
     QryDados_Log.Free;
   end;
-  {$endregion}
-
-  {$region 'Produtos'}
+{$ENDREGION}
+{$REGION 'Produtos'}
   QryDados_Log := TFDQuery.Create(nil);
   try
     AtualizaStatus('Verificando Exclusões de Produtos!');
@@ -139,61 +170,69 @@ begin
     QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
     with QryDados_Log do
     begin
-      if not (IsEmpty) then
-      while not Eof do
-      begin
-        AtualizaStatus('Excluindo Produto => ' + FieldByName('ID').AsString);
-        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
-        vTabela := 'PRODUTO';
-        Apaga_Registro(fDMPrincipal.FDLocal,vTabela, False, vCondicao);
-        vTabela := 'PRODUTO_LOG';
-        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
-        Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
-        Next;
-      end;
+      if not(IsEmpty) then
+        while not Eof do
+        begin
+          AtualizaStatus('Excluindo Produto => ' + FieldByName('ID').AsString);
+          vCondicao := ' and ID = ' + FieldByName('ID').AsString;
+          vTabela := 'PRODUTO';
+          Apaga_Registro(fDMPrincipal.FDLocal, vTabela, false, vCondicao);
+          vTabela := 'PRODUTO_LOG';
+          vCondicao := ' and ID = ' + FieldByName('ID').AsString;
+          Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+          Next;
+        end;
     end;
     AtualizaStatus('');
   finally
     QryDados_Log.Free;
   end;
-  {$endregion}
-
+{$ENDREGION}
 end;
 
-procedure TfrmPrincipal.Apaga_Registro(conexao : TFDConnection; Tabela : String; TestaTerminal : Boolean; Condicao : String = '0=1');
+procedure TfrmPrincipal.Apaga_Registro(Conexao: TFDConnection; Tabela: String;
+  TestaTerminal: Boolean; Condicao: String = '0=1');
 var
-  qry : TFDQuery;
+  qry: TFDQuery;
 begin
   qry := TFDQuery.Create(nil);
   try
     qry.Connection := Conexao;
-    qry.CachedUpdates := True;
+    qry.CachedUpdates := true;
     qry.Close;
     qry.SQL.Clear;
-    qry.SQL.Add('delete from ' + Tabela + ' where 0=0' );
+    qry.SQL.Add('delete from ' + Tabela + ' where 0=0');
     if TestaTerminal then
-       qry.SQL.Add(' and ID_TERMINAL = ' + fDMPrincipal.vTerminal);
+      qry.SQL.Add(' and ID_TERMINAL = ' + fDMPrincipal.vTerminal);
     qry.SQL.Add(' ' + Condicao);
     try
       qry.ExecSQL;
+      Conexao.Commit;
     except
-      on E : Exception do
+      on E: Exception do
       begin
-        GravaLogErro(e.Message + ' - ' + qry.SQL.Text);
+        GravaLogErro(E.Message + ' - ' + qry.SQL.Text);
       end;
     end;
   finally
     FreeAndNil(qry);
   end;
+
 end;
 
 procedure TfrmPrincipal.ApplicationEvents1Minimize(Sender: TObject);
 begin
   Self.Hide();
   Self.WindowState := wsMinimized;
-  TrayIcon.Visible := True;
-  TrayIcon.Animate := True;
+  TrayIcon.Visible := true;
+  TrayIcon.Animate := true;
   TrayIcon.ShowBalloonHint;
+end;
+
+procedure TfrmPrincipal.AtualizaLabel(aValue: String);
+begin
+  lblStatus.Caption := aValue;
+  lblStatus.Update;
 end;
 
 procedure TfrmPrincipal.AtualizaStatus(aValue: String);
@@ -203,13 +242,13 @@ begin
   lblStatus.Update;
 end;
 
-function TfrmPrincipal.ExcluirRegistroServidor: boolean;
+function TfrmPrincipal.ExcluirRegistroServidor: Boolean;
 var
-  vCondicao : String;
-  vNumCupom, vFilial : integer;
-  vTipo : String;
+  vCondicao: String;
+  vNumCupom, vFilial: integer;
+  vTipo: String;
 begin
-  {$Region 'Exclui CupomFiscal'}
+{$REGION 'Exclui CupomFiscal'}
   AtualizaStatus('Excluindo Cupom Fiscal');
   fDMPrincipal.vTabela := 'CUPOMFISCAL_LOG';
   fDMPrincipal.ListaTipo.Clear;
@@ -217,74 +256,74 @@ begin
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpLocal);
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      vNumCupom := FieldByName('NumCupom').AsInteger;
-      vFilial := FieldByName('Filial').AsInteger;
-      vTipo := FieldByName('Tipo_Cupom').AsString;
+    if not(IsEmpty) then
+      while not Eof do
+      begin
+        vNumCupom := FieldByName('NumCupom').AsInteger;
+        vFilial := FieldByName('Filial').AsInteger;
+        vTipo := FieldByName('Tipo_Cupom').AsString;
 
-      vCondicao := ' where Numcupom = ' + IntToStr(vNumCupom);
-      vCondicao := vCondicao + ' and filial = ' + IntToStr(vFilial);
-      vCondicao := vCondicao + ' and Terminal_ID = ' + fDMPrincipal.vTerminal;
-      vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
-      vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
+        vCondicao := ' where Numcupom = ' + IntToStr(vNumCupom);
+        vCondicao := vCondicao + ' and filial = ' + IntToStr(vFilial);
+        vCondicao := vCondicao + ' and Terminal_ID = ' + fDMPrincipal.vTerminal;
+        vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
+        vCondicao := vCondicao + ' and Tipo = ' + QuotedStr(vTipo);
 
-      try
-        fDMPrincipal.FDServer.ExecSQL('DELETE FROM CUPOMFISCAL ' + vCondicao);
-      except
-        on E : Exception do
-        begin
-          GravaLogErro('Erro Excluindo Cupom Fiscal nº: ' + IntToStr(vNumCupom));
+        try
+          fDMPrincipal.FDServer.ExecSQL('DELETE FROM CUPOMFISCAL ' + vCondicao);
+        except
+          on E: Exception do
+          begin
+            GravaLogErro('Erro Excluindo Cupom Fiscal nº: ' + IntToStr(vNumCupom));
+          end;
         end;
+        vCondicao := ' and ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDLocal, fDMPrincipal.vTabela, false, vCondicao);
+        Next;
       end;
-      vCondicao := ' and ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDLocal, fDMPrincipal.vTabela, False, vCondicao);
-      Next;
-    end;
   end;
-  {$endRegion}
+{$ENDREGION}
 end;
 
-function TfrmPrincipal.ExportaMovimentosPDV: boolean;
+function TfrmPrincipal.ExportaMovimentosPDV: Boolean;
 var
-  vCondicao, vTabela, Prazo : string;
-  i, vIDNovo, Cont : integer;
-  erro, erroProcedure : Boolean;
+  vCondicao, vTabela, Prazo: string;
+  i, vIDNovo, Cont: integer;
+  Erro, erroProcedure: Boolean;
 begin
-  {$region 'Pessoa'}
-    AtualizaStatus('Verificando Clientes');
-    Cont := 0;
-    if Assigned(QryDados_Log) then
-    begin
-      FreeAndNil(QryDados_Log);
-      QryDados_Log := TFDQuery.Create(nil);
-    end;
-    if Assigned(QryDadosLocal) then
-    begin
-      FreeAndNil(QryDadosLocal);
-      QryDadosLocal := TFDQuery.Create(nil);
-      QryDadosLocal.Connection := fDMPrincipal.FDLocal;
-    end;
-    if Assigned(QryDadosServer) then
-    begin
-      FreeAndNil(QryDadosServer);
-      QryDadosServer := TFDQuery.Create(nil);
-      QryDadosServer.Connection := fDMPrincipal.FDServer;
-    end;
+{$REGION 'Pessoa'}
+  AtualizaStatus('Verificando Clientes');
+  Cont := 0;
+  if Assigned(QryDados_Log) then
+  begin
+    FreeAndNil(QryDados_Log);
+    QryDados_Log := TFDQuery.Create(nil);
+  end;
+  if Assigned(QryDadosLocal) then
+  begin
+    FreeAndNil(QryDadosLocal);
+    QryDadosLocal := TFDQuery.Create(nil);
+    QryDadosLocal.Connection := fDMPrincipal.FDLocal;
+  end;
+  if Assigned(QryDadosServer) then
+  begin
+    FreeAndNil(QryDadosServer);
+    QryDadosServer := TFDQuery.Create(nil);
+    QryDadosServer.Connection := fDMPrincipal.FDServer;
+  end;
 
-    with fDMPrincipal do
-    begin
-      vTabela := 'PESSOA_LOG';
-      ListaTipo.Clear;
-      ListaTipo.Add('0');
-      ListaTipo.Add('1');
-      QryDados_Log := Abrir_Tabela_Log(tpLocal);
-    end;
+  with fDMPrincipal do
+  begin
+    vTabela := 'PESSOA_LOG';
+    ListaTipo.Clear;
+    ListaTipo.Add('0');
+    ListaTipo.Add('1');
+    QryDados_Log := Abrir_Tabela_Log(tpLocal);
+  end;
 
-    with QryDados_Log do
-    begin
-      if not (IsEmpty) then
+  with QryDados_Log do
+  begin
+    if not(IsEmpty) then
       while not Eof do
       begin
         AtualizaStatus('Enviando Pessoa => ' + FieldByName('ID').AsString);
@@ -292,11 +331,11 @@ begin
         with fDMPrincipal do
         begin
           vTabela := 'PESSOA';
-          AdicionaDados('CODIGO',FieldByName('ID').AsString);
+          AdicionaDados('CODIGO', FieldByName('ID').AsString);
           QryDadosLocal := Abrir_Tabela(tpLocal);
 
           vTabela := 'PESSOA';
-          AdicionaDados('CODIGO',FieldByName('ID').AsString );
+          AdicionaDados('CODIGO', FieldByName('ID').AsString);
           QryDadosServer := Abrir_Tabela(tpServer);
         end;
 
@@ -305,15 +344,15 @@ begin
         else
           QryDadosServer.Edit;
 
-        for I := 0 to QryDadosLocal.FieldCount - 1 do
+        for i := 0 to QryDadosLocal.FieldCount - 1 do
         begin
           try
             QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-               QryDadosLocal.Fields[i].AsVariant;
+              QryDadosLocal.Fields[i].AsVariant;
           except
-            on E : Exception do
+            on E: Exception do
             begin
-              GravaLogErro('Erro campo Cliente: ' + e.Message);
+              GravaLogErro('Erro campo Cliente: ' + E.Message);
               Application.ProcessMessages;
             end;
           end;
@@ -327,32 +366,30 @@ begin
             Application.ProcessMessages;
             Cont := 0;
           end;
-          QryDadosServer.CachedUpdates := True;
+          QryDadosServer.CachedUpdates := true;
           QryDadosServer.ApplyUpdates(0);
-          erro := False;
+          Erro := false;
         except
-          on E : Exception do
+          on E: Exception do
           begin
             QryDadosServer.Cancel;
-            erro := True;
+            Erro := true;
             Application.ProcessMessages;
-            GravaLogErro('Erro Gravando Cliente: ' + e.Message);
+            GravaLogErro('Erro Gravando Cliente: ' + E.Message);
           end;
         end;
-        if not erro then
+        if not Erro then
         begin
           vTabela := 'PESSOA_LOG';
           vCondicao := ' and ID = ' + FieldByName('ID').AsString;
-          Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
+          Apaga_Registro(fDMPrincipal.FDLocal, vTabela, true, vCondicao);
         end;
         Next;
       end;
-    end;
+  end;
 
-  {$EndREgion}
-
-
-  {$region 'Cupom Fiscal'}
+{$ENDREGION}
+{$REGION 'Cupom Fiscal'}
   try
     AtualizaStatus('Verificando Cupom Fiscal');
     Cont := 0;
@@ -386,392 +423,399 @@ begin
     end;
     with QryDados_Log do
     begin
-      if not (IsEmpty) then
-      while not Eof do
-      begin
-        AtualizaStatus('Recebendo Cupom Fiscal => ' + FieldByName('ID').AsString);
-        Inc(Cont);
-        with fDMPrincipal do
+      if not(IsEmpty) then
+        while not Eof do
         begin
-          vTabela := 'CUPOMFISCAL';
-          AdicionaDados('ID',FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
+          AtualizaStatus('Enviado Cupom Fiscal => ' + FieldByName('ID').AsString);
+          Inc(Cont);
+          with fDMPrincipal do
+          begin
+            vTabela := 'CUPOMFISCAL';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
 
-          vTabela := 'CUPOMFISCAL';
-          vCondicao := 'and NUMCUPOM = ' + QryDadosLocal.FieldByName('NUMCUPOM').AsString;
-          vCondicao := vCondicao + ' and FILIAL = ' + QryDadosLocal.FieldByName('FILIAL').AsString;
-          vCondicao := vCondicao + ' and TIPO = ' + QuotedStr(QryDadosLocal.FieldByName('TIPO').AsString);
-          vCondicao := vCondicao + ' and SERIE = ' + QuotedStr(QryDadosLocal.FieldByName('SERIE').AsString);
-          Apaga_Registro(fDMPrincipal.FDServer, vTabela, False, vCondicao);
+            vTabela := 'CUPOMFISCAL';
+            vCondicao := 'and NUMCUPOM = ' + QryDadosLocal.FieldByName('NUMCUPOM').AsString;
+            vCondicao := vCondicao + ' and FILIAL = ' + QryDadosLocal.FieldByName('FILIAL')
+              .AsString;
+            vCondicao := vCondicao + ' and TIPO = ' +
+              QuotedStr(QryDadosLocal.FieldByName('TIPO').AsString);
+            vCondicao := vCondicao + ' and SERIE = ' +
+              QuotedStr(QryDadosLocal.FieldByName('SERIE').AsString);
+            Apaga_Registro(fDMPrincipal.FDServer, vTabela, false, vCondicao);
 
-          AdicionaDados('ID',QuotedStr('-1'));
-          QryDadosServer := Abrir_Tabela(tpServer);
-        end;
-        if QryDadosServer.IsEmpty then
-        begin
-          QryDadosServer.Insert;
-          vIDNovo := 0;
+            AdicionaDados('ID', QuotedStr('-1'));
+            QryDadosServer := Abrir_Tabela(tpServer);
+          end;
+          if QryDadosServer.IsEmpty then
+          begin
+            QryDadosServer.Insert;
+            vIDNovo := 0;
           end
-        else
-        begin
-          QryDadosServer.Edit;
-          vIDNovo := QryDadosServer.FieldByName('ID').AsInteger;
-        end;
+          else
+          begin
+            QryDadosServer.Edit;
+            vIDNovo := QryDadosServer.FieldByName('ID').AsInteger;
+          end;
 
-        for I := 0 to QryDadosLocal.FieldCount - 1 do
-        begin
+          for i := 0 to QryDadosLocal.FieldCount - 1 do
+          begin
+            try
+              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                QryDadosLocal.Fields[i].AsVariant;
+            except
+              Application.ProcessMessages;
+            end;
+          end;
           try
-            QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-               QryDadosLocal.Fields[i].AsVariant;
+            if vIDNovo = 0 then
+              vIDNovo := fDMPrincipal.FDServer.ExecSQLScalar
+                ('select gen_id(GEN_CUPOMFISCAL,1) from rdb$database');
+
+            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+            QryDadosServer.FieldByName('id_fechamento').Clear;
+            QryDadosServer.Post;
+
+            if Cont = 5 then
+            begin
+              Application.ProcessMessages;
+              Cont := 0;
+            end;
+            QryDadosServer.CachedUpdates := true;
+            QryDadosServer.ApplyUpdates(0);
+            Erro := false;
           except
-            Application.ProcessMessages;
+            on E: Exception do
+            begin
+              GravaLogErro('Erro Gravando CupomFiscal: ' + E.Message);
+              QryDadosServer.Cancel;
+              Erro := true;
+              Application.ProcessMessages;
+            end;
           end;
-        end;
-        try
-          if vIDNovo = 0 then
-            vIDNovo := fDMPrincipal.FDServer.ExecSQLScalar('select gen_id(GEN_CUPOMFISCAL,1) from rdb$database');
 
-          QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
-          QryDadosServer.FieldByName('id_fechamento').Clear;
-          QryDadosServer.Post;
-
-          if Cont = 5 then
-          begin
-            Application.ProcessMessages;
-            Cont := 0;
-          end;
-          QryDadosServer.CachedUpdates := True;
-          QryDadosServer.ApplyUpdates(0);
-          erro := False;
-        except
-          on E : Exception do
-          begin
-            GravaLogErro('Erro Gravando CupomFiscal: ' + e.Message);
-            QryDadosServer.Cancel;
-            erro := True;
-            Application.ProcessMessages;
-          end;
-        end;
-
-        //Gravar itens
-        with fDMPrincipal do
-        begin
-          vTabela := 'CUPOMFISCAL_ITENS';
-          AdicionaDados('ID', FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
-        end;
-
-        while not QryDadosLocal.Eof do
-        begin
-          AtualizaStatus('Recebendo Itens do Cupom => ' + FieldByName('ID').AsString);
+          // Gravar itens
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_ITENS';
-            AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
-            QryDadosServer := Abrir_Tabela(tpServer);
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
-          if QryDadosServer.IsEmpty then
-            QryDadosServer.Insert
-          else
-            QryDadosServer.Edit;
 
-          for I := 0 to QryDadosLocal.FieldCount - 1 do
+          while not QryDadosLocal.Eof do
           begin
-            try
-              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-                 QryDadosLocal.Fields[i].AsVariant;
-            except
-              Application.ProcessMessages;
-            end;
-          end;
-          try
-            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
-            QryDadosServer.FieldByName('id_movimento').Clear;
-            QryDadosServer.CachedUpdates := True;
-            QryDadosServer.Post;
-            QryDadosServer.ApplyUpdates(0);
-          except
-            on E : Exception do
+            AtualizaStatus('Enviado Itens do Cupom => ' + FieldByName('ID').AsString);
+            with fDMPrincipal do
             begin
-              GravaLogErro('Erro Gravando Cupom Fiscal Item: ' + e.Message);
-              QryDadosServer.Cancel;
-              erro := True;
-              Application.ProcessMessages;
+              vTabela := 'CUPOMFISCAL_ITENS';
+              AdicionaDados('ID', IntToStr(vIDNovo));
+              AdicionaDados('ITEM', QryDadosLocal.FieldByName('ITEM').AsString, false);
+              QryDadosServer := Abrir_Tabela(tpServer);
             end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
+            try
+              QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+              QryDadosServer.FieldByName('id_movimento').Clear;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Cupom Fiscal Item: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
+            end;
+            QryDadosLocal.Next;
           end;
-          QryDadosLocal.Next;
-        end;
 
-        //Gravar itens sem
-        with fDMPrincipal do
-        begin
-          vTabela := 'CUPOMFISCAL_ITENS_SEM';
-          AdicionaDados('ID', FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
-        end;
-
-        while not QryDadosLocal.Eof do
-        begin
-          AtualizaStatus('Recebendo Itens do Cupom Sem => ' + FieldByName('ID').AsString);
+          // Gravar itens sem
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_ITENS_SEM';
-            AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
-            QryDadosServer := Abrir_Tabela(tpServer);
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
-          if QryDadosServer.IsEmpty then
-            QryDadosServer.Insert
-          else
-            QryDadosServer.Edit;
 
-          for I := 0 to QryDadosLocal.FieldCount - 1 do
+          while not QryDadosLocal.Eof do
           begin
-            try
-              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-                 QryDadosLocal.Fields[i].AsVariant;
-            except
-              Application.ProcessMessages;
-            end;
-          end;
-          try
-            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
-            QryDadosServer.CachedUpdates := True;
-            QryDadosServer.Post;
-            QryDadosServer.ApplyUpdates(0);
-          except
-            on E : Exception do
+            AtualizaStatus('Enviado Itens do Cupom Sem => ' + FieldByName('ID').AsString);
+            with fDMPrincipal do
             begin
-              GravaLogErro('Erro Gravando Cupom Fiscal Item Sem: ' + e.Message);
-              QryDadosServer.Cancel;
-              erro := True;
-              Application.ProcessMessages;
+              vTabela := 'CUPOMFISCAL_ITENS_SEM';
+              AdicionaDados('ID', IntToStr(vIDNovo));
+              AdicionaDados('ITEM', QryDadosLocal.FieldByName('ITEM').AsString, false);
+              QryDadosServer := Abrir_Tabela(tpServer);
             end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
+            try
+              QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Cupom Fiscal Item Sem: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
+            end;
+            QryDadosLocal.Next;
           end;
-          QryDadosLocal.Next;
-        end;
 
-        //Gravar cupom parc
-        with fDMPrincipal do
-        begin
-          vTabela := 'CUPOMFISCAL_PARC';
-          AdicionaDados('ID', FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
-        end;
-
-        while not QryDadosLocal.Eof do
-        begin
-          AtualizaStatus('Recebendo Parcelas do Cupom => ' + FieldByName('ID').AsString);
+          // Gravar cupom parc
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_PARC';
-            AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('PARCELA',QryDadosLocal.FieldByName('PARCELA').AsString,False);
-            QryDadosServer := Abrir_Tabela(tpServer);
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
-          if QryDadosServer.IsEmpty then
-            QryDadosServer.Insert
-          else
-            QryDadosServer.Edit;
 
-          for I := 0 to QryDadosLocal.FieldCount - 1 do
+          while not QryDadosLocal.Eof do
           begin
-            try
-              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-                 QryDadosLocal.Fields[i].AsVariant;
-            except
-              Application.ProcessMessages;
-            end;
-          end;
-          try
-            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
-            QryDadosServer.FieldByName('id_duplicata').Clear;
-            QryDadosServer.CachedUpdates := True;
-            QryDadosServer.Post;
-            QryDadosServer.ApplyUpdates(0);
-          except
-            on E : Exception do
+            AtualizaStatus('Enviado Parcelas do Cupom => ' + FieldByName('ID').AsString);
+            with fDMPrincipal do
             begin
-              GravaLogErro('Erro Gravando Cupom Fiscal Parc: ' + e.Message);
-              QryDadosServer.Cancel;
-              erro := True;
-              Application.ProcessMessages;
+              vTabela := 'CUPOMFISCAL_PARC';
+              AdicionaDados('ID', IntToStr(vIDNovo));
+              AdicionaDados('PARCELA', QryDadosLocal.FieldByName('PARCELA').AsString, false);
+              QryDadosServer := Abrir_Tabela(tpServer);
             end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
+            try
+              QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+              QryDadosServer.FieldByName('id_duplicata').Clear;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Cupom Fiscal Parc: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
+            end;
+            QryDadosLocal.Next;
           end;
-          QryDadosLocal.Next;
-        end;
 
-        //Gravar cupom troca
-        with fDMPrincipal do
-        begin
-          vTabela := 'CUPOMFISCAL_TROCA';
-          AdicionaDados('ID_CUPOM', FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
-        end;
-
-        while not QryDadosLocal.Eof do
-        begin
-          AtualizaStatus('Recebendo Troca do Cupom => ' + FieldByName('ID').AsString);
+          // Gravar cupom troca
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_TROCA';
-            AdicionaDados('ID_CUPOM', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
-            QryDadosServer := Abrir_Tabela(tpServer);
+            AdicionaDados('ID_CUPOM', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
-          if QryDadosServer.IsEmpty then
-            QryDadosServer.Insert
-          else
-            QryDadosServer.Edit;
 
-          for I := 0 to QryDadosLocal.FieldCount - 1 do
+          while not QryDadosLocal.Eof do
           begin
-            try
-              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-                 QryDadosLocal.Fields[i].AsVariant;
-            except
-              Application.ProcessMessages;
-            end;
-          end;
-          try
-            QryDadosServer.FieldByName('ID').AsInteger := fDMPrincipal.FDServer.ExecSQLScalar('select gen_id(GEN_CUPOMFISCAL_TROCA,1) from rdb$database');
-            QryDadosServer.FieldByName('ID_CUPOM').AsInteger := vIDNovo;
-            QryDadosServer.FieldByName('ID_MOVESTOQUE').Clear;
-            QryDadosServer.CachedUpdates := True;
-            QryDadosServer.Post;
-            QryDadosServer.ApplyUpdates(0);
-          except
-            on E : Exception do
+            AtualizaStatus('Enviado Troca do Cupom => ' + FieldByName('ID').AsString);
+            with fDMPrincipal do
             begin
-              GravaLogErro('Erro Gravando Cupom Fiscal Troca: ' + e.Message);
-              QryDadosServer.Cancel;
-              erro := True;
-              Application.ProcessMessages;
+              vTabela := 'CUPOMFISCAL_TROCA';
+              AdicionaDados('ID_CUPOM', IntToStr(vIDNovo));
+              AdicionaDados('ITEM', QryDadosLocal.FieldByName('ITEM').AsString, false);
+              QryDadosServer := Abrir_Tabela(tpServer);
             end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
+            try
+              QryDadosServer.FieldByName('ID').AsInteger := fDMPrincipal.FDServer.ExecSQLScalar
+                ('select gen_id(GEN_CUPOMFISCAL_TROCA,1) from rdb$database');
+              QryDadosServer.FieldByName('ID_CUPOM').AsInteger := vIDNovo;
+              QryDadosServer.FieldByName('ID_MOVESTOQUE').Clear;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Cupom Fiscal Troca: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
+            end;
+            QryDadosLocal.Next;
           end;
-          QryDadosLocal.Next;
-        end;
 
-        //Gravar Cupom Fiscal FormaPagto
-        with fDMPrincipal do
-        begin
-          vTabela := 'CUPOMFISCAL_FORMAPGTO';
-          AdicionaDados('ID', FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
-        end;
-
-        while not QryDadosLocal.Eof do
-        begin
-          AtualizaStatus('Recebendo Forma Pagto do Cupom => ' + FieldByName('ID').AsString);
+          // Gravar Cupom Fiscal FormaPagto
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_FORMAPGTO';
-            AdicionaDados('ID', IntToStr(vIDNovo));
-            AdicionaDados('ITEM',QryDadosLocal.FieldByName('ITEM').AsString,False);
-            QryDadosServer := Abrir_Tabela(tpServer);
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
-          if QryDadosServer.IsEmpty then
-            QryDadosServer.Insert
-          else
-            QryDadosServer.Edit;
 
-          for I := 0 to QryDadosLocal.FieldCount - 1 do
+          while not QryDadosLocal.Eof do
           begin
+            AtualizaStatus('Enviado Forma Pagto do Cupom => ' + FieldByName('ID').AsString);
+            with fDMPrincipal do
+            begin
+              vTabela := 'CUPOMFISCAL_FORMAPGTO';
+              AdicionaDados('ID', IntToStr(vIDNovo));
+              AdicionaDados('ITEM', QryDadosLocal.FieldByName('ITEM').AsString, false);
+              QryDadosServer := Abrir_Tabela(tpServer);
+            end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
             try
-              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
-                 QryDadosLocal.Fields[i].AsVariant;
+              QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
             except
-              Application.ProcessMessages;
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Cupom Fiscal Troca: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
             end;
+            QryDadosLocal.Next;
           end;
+
+          // Gravar Estoque
+          repeat
+            try
+              AtualizaStatus('Gravando Estoque => ' + FieldByName('ID').AsString);
+              fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE(' +
+                IntToStr(vIDNovo) + ', ''CFI'')');
+              erroProcedure := false;
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
+                fDMPrincipal.FDServer.Rollback;
+                erroProcedure := true;
+              end;
+            end;
+
+          until not erroProcedure;
+
+          // Gravar Estoque Troca
+
+          repeat
+            try
+              AtualizaStatus('Gravando Estoque Troca  => ' + FieldByName('ID').AsString);
+              fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE(' +
+                IntToStr(vIDNovo) + ', ''TRO'')');
+              erroProcedure := false
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
+                fDMPrincipal.FDServer.Rollback;
+                erroProcedure := true;
+              end;
+            end;
+          until not erroProcedure;
+
+          // Gravar Duplicata - Histórico - Comissão - Financeiro
           try
-            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
-            QryDadosServer.CachedUpdates := True;
-            QryDadosServer.Post;
-            QryDadosServer.ApplyUpdates(0);
+            AtualizaStatus('Gravando Duplicata => ' + FieldByName('ID').AsString);
+            fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_DUPLICATA_CUPOM(' +
+              QuotedStr('') + ', ' + IntToStr(vIDNovo) + ', ' + fDMPrincipal.vTerminal + ')');
           except
-            on E : Exception do
+            on E: Exception do
             begin
-              GravaLogErro('Erro Gravando Cupom Fiscal Troca: ' + e.Message);
-              QryDadosServer.Cancel;
-              erro := True;
-              Application.ProcessMessages;
+              GravaLogErro('Erro Gravando Duplicata estoque nº: ' + IntToStr(vIDNovo));
             end;
           end;
-          QryDadosLocal.Next;
-        end;
-
-        //Gravar Estoque
-        repeat
-          try
-            AtualizaStatus('Gravando Estoque => ' + FieldByName('ID').AsString);
-            fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''CFI'')');
-            erroProcedure := False;
-          except
-            on E : Exception do
-            begin
-              GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
-              fDMPrincipal.FDServer.Rollback;
-              erroProcedure := True;
-            end;
-          end;
-
-        until not erroProcedure;
-
-        //Gravar Estoque Troca
-
-        repeat
-          try
-            AtualizaStatus('Gravando Estoque Troca  => ' + FieldByName('ID').AsString);
-            fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE('+ IntToStr(vIDNovo) + ', ''TRO'')');
-            erroProcedure := False
-          except
-            on E : Exception do
-            begin
-              GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
-              fDMPrincipal.FDServer.Rollback;
-              erroProcedure := True;
-            end;
-          end;
-        until not erroProcedure;
-
-        //Gravar Duplicata - Histórico - Comissão - Financeiro
-        try
-          AtualizaStatus('Gravando Duplicata => ' + FieldByName('ID').AsString);
-          fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_DUPLICATA_CUPOM('+
-                                         QuotedStr('')+ ', ' + IntToStr(vIDNovo) + ', ' +
-                                         fDMPrincipal.vTerminal + ')');
-        except
-          on E : Exception do
+          if not Erro then
           begin
-          GravaLogErro('Erro Gravando Duplicata estoque nº: ' + IntToStr(vIDNovo));
+            vTabela := 'CUPOMFISCAL_LOG';
+            vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+            Apaga_Registro(fDMPrincipal.FDLocal, vTabela, true, vCondicao);
           end;
+          Next;
         end;
-        if not erro then
-        begin
-          vTabela := 'CUPOMFISCAL_LOG';
-          vCondicao := 'and ID = ' + FieldByName('ID').AsString;
-          Apaga_Registro(fDMPrincipal.FDLocal,vTabela, True, vCondicao);
-        end;
-        Next;
-      end;
     end;
   finally
     QryDados_Log.Free;
   end;
   AtualizaStatus('');
-  {$endregion}
-
+{$ENDREGION}
 end;
 
-function TfrmPrincipal.ImportaServidorTabelaProduto: boolean;
+function TfrmPrincipal.ImportaServidorTabelaProduto: Boolean;
 var
-  erro, gravou : boolean;
-  vCondicao, vTabela : String;
-  i : integer;
+  Erro, gravou: Boolean;
+  vCondicao, vTabela: String;
+  i: integer;
 begin
-  {$region 'Inclui/Altera Clientes'}
+try
+
+{$REGION 'Inclui/Altera Clientes'}
   AtualizaStatus('Verificando Alterações em Clientes');
   QryDados_Log.Close;
   fDMPrincipal.ListaTipo.Clear;
@@ -781,303 +825,306 @@ begin
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Cliente => ' + FieldByName('ID').AsString);
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        AdicionaDados('CODIGO',FieldByName('ID').AsString);
-        vTabela := 'PESSOA';
-        QryDadosLocal := Abrir_Tabela(tpLocal);
-      end;
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
+        AtualizaStatus('Recebendo Cliente => ' + FieldByName('ID').AsString);
+        with fDMPrincipal do
+        begin
+          AdicionaDados('CODIGO', FieldByName('ID').AsString);
+          vTabela := 'PESSOA';
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
 
-      QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
+        QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
         try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
         except
+          QryDadosLocal.Cancel;
+          Erro := true;
           Application.ProcessMessages;
         end;
-      end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
 
-      vTabela := 'PESSOA_LOG';
-      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
-      Next;
-    end;
+        vTabela := 'PESSOA_LOG';
+        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+        Next;
+      end;
   end;
   QryDados_Log.Close;
   AtualizaStatus('');
-  {$endregion}
-
-  {$region 'Inclui/Altera NCM'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera NCM'}
   AtualizaStatus('Verificando Alterações em NCM');
   fDMPrincipal.vTabela := 'TAB_NCM_LOG';
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo NCM => ' + FieldByName('ID').AsString);
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        vTabela := 'TAB_NCM';
-        QryDadosLocal := Abrir_Tabela(tpLocal);
-      end;
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
-      QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
+        AtualizaStatus('Recebendo NCM => ' + FieldByName('ID').AsString);
+        with fDMPrincipal do
+        begin
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          vTabela := 'TAB_NCM';
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+        QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
         try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
         except
+          QryDadosLocal.Cancel;
+          Erro := true;
           Application.ProcessMessages;
         end;
+        fDMPrincipal.vTabela := 'TAB_NCM_LOG';
+        vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, fDMPrincipal.vTabela, true, vCondicao);
+        Next;
       end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-      fDMPrincipal.vTabela := 'TAB_NCM_LOG';
-      vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDServer,fDMPrincipal.vTabela, True, vCondicao);
-      Next;
-    end;
   end;
   AtualizaStatus('');
-  {$endregion}
-
-  {$region 'Inclui/Altera Unidade'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Unidade'}
   AtualizaStatus('Verificando Alterações em Unidades');
   fDMPrincipal.vTabela := 'UNIDADE';
-  fDMPrincipal.AdicionaDados('','');
+  fDMPrincipal.AdicionaDados('', '');
   QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
   with QryDadosServer do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Unidade => ' + FieldByName('UNIDADE').AsString);
-
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        AdicionaDados('UNIDADE',QuotedStr(FieldByName('UNIDADE').AsString));
-        QryDadosLocal := Abrir_Tabela(tpLocal);
-      end;
+        AtualizaStatus('Recebendo Unidade => ' + FieldByName('UNIDADE').AsString);
 
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
+        with fDMPrincipal do
+        begin
+          AdicionaDados('UNIDADE', QuotedStr(FieldByName('UNIDADE').AsString));
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
 
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
         try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
         except
+          QryDadosLocal.Cancel;
+          Erro := true;
           Application.ProcessMessages;
         end;
+        Next;
       end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-      Next;
-    end;
   end;
   AtualizaStatus('');
   QryDadosLocal.Close;
   QryDadosServer.Close;
-  {$endregion}
-
-  {$region 'Inclui/Altera Grupo'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Grupo'}
   AtualizaStatus('Verificando Alterações em Grupos');
   fDMPrincipal.vTabela := 'GRUPO';
-  fDMPrincipal.AdicionaDados('','');
+  fDMPrincipal.AdicionaDados('', '');
   QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
   with QryDadosServer do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Grupos => ' + FieldByName('ID').AsString);
-
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosLocal := Abrir_Tabela(tpLocal);
-      end;
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
+        AtualizaStatus('Recebendo Grupos => ' + FieldByName('ID').AsString);
 
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
+        with fDMPrincipal do
+        begin
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
         try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
         except
+          QryDadosLocal.Cancel;
+          Erro := true;
           Application.ProcessMessages;
         end;
+        Next;
       end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-      Next;
-    end;
   end;
   AtualizaStatus('');
   QryDadosLocal.Close;
   QryDadosServer.Close;
-  {$endregion}
-
-  {$Region 'Inclui/Altera Marca'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Marca'}
   AtualizaStatus('Verificando Alterações em Marcas');
   fDMPrincipal.vTabela := 'MARCA';
-  fDMPrincipal.AdicionaDados('','');
+  fDMPrincipal.AdicionaDados('', '');
   QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
   with QryDadosServer do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Marcas => ' + FieldByName('ID').AsString);
-
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosLocal := Abrir_Tabela(tpLocal);
-      end;
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
+        AtualizaStatus('Recebendo Marcas => ' + FieldByName('ID').AsString);
 
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
+        with fDMPrincipal do
+        begin
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
         try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
         except
+          QryDadosLocal.Cancel;
+          Erro := true;
           Application.ProcessMessages;
         end;
+        Next;
       end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-      Next;
-    end;
   end;
   AtualizaStatus('');
   QryDadosLocal.Close;
   QryDadosServer.Close;
-  {$endregion}
-
-  {$region 'Inclui/Altera Produto'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Produto'}
   AtualizaStatus('Verificando Alterações em Produtos');
   fDMPrincipal.vTabela := 'PRODUTO_LOG';
   fDMPrincipal.ListaTipo.Clear;
   fDMPrincipal.ListaTipo.Add('0');
   fDMPrincipal.ListaTipo.Add('1');
+  QryDados_Log.Close;
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Produtos => ' + FieldByName('ID').AsString);
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        vTabela := 'PRODUTO';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosLocal := Abrir_Tabela(tpLocal);
-      end;
-
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
-      QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
-        try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
-        except
-          Application.ProcessMessages;
+        AtualizaStatus('Recebendo Produtos => ' + FieldByName('ID').AsString);
+        with fDMPrincipal do
+        begin
+          vTabela := 'PRODUTO';
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosLocal.Close;
+          QryDadosLocal := Abrir_Tabela(tpLocal);
         end;
+
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+        QryDadosServer.Close;
+//        QryDadosServer.FetchOptions.RowsetSize := 10;
+        QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            on E : Exception do
+              TGravarLog.New.doSaveLog('Erro Produto: ' + e.Message);
+          end;
+        end;
+        try
+          QryDadosLocal.CachedUpdates := True;
+          QryDadosLocal.Post;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
+        except
+          on E : Exception do
+          begin
+            QryDadosLocal.Cancel;
+            Erro := true;
+            Application.ProcessMessages;
+            TGravarLog.New.doSaveLog('Erro Produto: ' + e.Message);
+          end;
+        end;
+        fDMPrincipal.vTabela := 'PRODUTO_LOG';
+        vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, fDMPrincipal.vTabela, true, vCondicao);
+        Next;
       end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-      fDMPrincipal.vTabela := 'PRODUTO_LOG';
-      vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDServer, fDMPrincipal.vTabela, True, vCondicao);
-      Next;
-    end;
   end;
   AtualizaStatus('');
-  {$endregion}
-
-  {$region 'Inclui/Altera Tabela de Preço'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Tabela de Preço'}
   AtualizaStatus('Verificando Alterações em Tabela de Preço');
   fDMPrincipal.vTabela := 'TAB_PRECO_LOG';
   fDMPrincipal.ListaTipo.Clear;
@@ -1086,96 +1133,95 @@ begin
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Tabela de Preço => ' + FieldByName('ID').AsString);
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        vTabela := 'TAB_PRECO';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosLocal  := Abrir_Tabela(tpLocal);
-        QryDadosServer := Abrir_Tabela(tpServer);
-      end;
-
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
-
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
-        try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
-        except
-          Application.ProcessMessages;
-        end;
-      end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-
-     //   Gravar itens
-      with fDMPrincipal do
-      begin
-        vTabela := 'TAB_PRECO_ITENS';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosServer := Abrir_Tabela(tpServer);
-      end;
-      while not QryDadosServer.Eof do
-      begin
-        AtualizaStatus('Recebendo Itens Tabela de Preço => ' + FieldByName('ID').AsString);
+        AtualizaStatus('Recebendo Tabela de Preço => ' + FieldByName('ID').AsString);
         with fDMPrincipal do
         begin
-          vTabela := 'TAB_PRECO_ITENS';
-          AdicionaDados('ID',FieldByName('ID').AsString);
-          AdicionaDados('ITEM',QryDadosServer.FieldByName('ITEM').AsString,False);
+          vTabela := 'TAB_PRECO';
+          AdicionaDados('ID', FieldByName('ID').AsString);
           QryDadosLocal := Abrir_Tabela(tpLocal);
+          QryDadosServer := Abrir_Tabela(tpServer);
         end;
+
         if QryDadosLocal.IsEmpty then
           QryDadosLocal.Insert
         else
           QryDadosLocal.Edit;
-        for I := 0 to QryDadosServer.FieldCount - 1 do
+
+        for i := 0 to QryDadosServer.FieldCount - 1 do
         begin
           try
             QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-               QryDadosServer.Fields[i].AsVariant;
+              QryDadosServer.Fields[i].AsVariant;
           except
             Application.ProcessMessages;
           end;
         end;
         try
           QryDadosLocal.Post;
-          QryDadosLocal.CachedUpdates := True;
+          QryDadosLocal.CachedUpdates := true;
           QryDadosLocal.ApplyUpdates(0);
-          erro := False;
+          Erro := false;
         except
           QryDadosLocal.Cancel;
-          erro := True;
+          Erro := true;
           Application.ProcessMessages;
         end;
-        QryDadosServer.Next;
-      end;
 
-      vTabela := 'TAB_PRECO_LOG';
-      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
-      Next;
-    end;
+        // Gravar itens
+        with fDMPrincipal do
+        begin
+          vTabela := 'TAB_PRECO_ITENS';
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosServer := Abrir_Tabela(tpServer);
+        end;
+        while not QryDadosServer.Eof do
+        begin
+          AtualizaStatus('Recebendo Itens Tabela de Preço => ' + FieldByName('ID').AsString);
+          with fDMPrincipal do
+          begin
+            vTabela := 'TAB_PRECO_ITENS';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            AdicionaDados('ITEM', QryDadosServer.FieldByName('ITEM').AsString, false);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
+          end;
+          if QryDadosLocal.IsEmpty then
+            QryDadosLocal.Insert
+          else
+            QryDadosLocal.Edit;
+          for i := 0 to QryDadosServer.FieldCount - 1 do
+          begin
+            try
+              QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+                QryDadosServer.Fields[i].AsVariant;
+            except
+              Application.ProcessMessages;
+            end;
+          end;
+          try
+            QryDadosLocal.Post;
+            QryDadosLocal.CachedUpdates := true;
+            QryDadosLocal.ApplyUpdates(0);
+            Erro := false;
+          except
+            QryDadosLocal.Cancel;
+            Erro := true;
+            Application.ProcessMessages;
+          end;
+          QryDadosServer.Next;
+        end;
+
+        vTabela := 'TAB_PRECO_LOG';
+        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+        Next;
+      end;
   end;
   AtualizaStatus('');
-  {$endregion}
-
-  {$region 'Inclui/Altera Condição de Pagamento'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Condição de Pagamento'}
   AtualizaStatus('Verificando Alterações em Condição de Pagamento');
   fDMPrincipal.vTabela := 'CONDPGTO_LOG';
   fDMPrincipal.ListaTipo.Clear;
@@ -1184,94 +1230,93 @@ begin
   QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Condições de Pagto => ' + FieldByName('ID').AsString);
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        vTabela := 'CONDPGTO';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosLocal  := Abrir_Tabela(tpLocal);
-        QryDadosServer := Abrir_Tabela(tpServer);
-      end;
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
-        try
-          QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
-        except
-          Application.ProcessMessages;
-        end;
-      end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-
-      //Gravar itens
-      with fDMPrincipal do
-      begin
-        vTabela := 'CONDPGTO_DIA';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosServer := Abrir_Tabela(tpServer);
-      end;
-      while not QryDadosServer.Eof do
-      begin
-        AtualizaStatus('Recebendo Itens Condições de Pagto => ' + FieldByName('ID').AsString);
+        AtualizaStatus('Recebendo Condições de Pagto => ' + FieldByName('ID').AsString);
         with fDMPrincipal do
         begin
-          vTabela := 'CONDPGTO_DIA';
-          AdicionaDados('ID',FieldByName('ID').AsString);
-          AdicionaDados('ITEM',QryDadosServer.FieldByName('ITEM').AsString,False);
+          vTabela := 'CONDPGTO';
+          AdicionaDados('ID', FieldByName('ID').AsString);
           QryDadosLocal := Abrir_Tabela(tpLocal);
+          QryDadosServer := Abrir_Tabela(tpServer);
         end;
         if QryDadosLocal.IsEmpty then
           QryDadosLocal.Insert
         else
           QryDadosLocal.Edit;
-
-        for I := 0 to QryDadosServer.FieldCount - 1 do
+        for i := 0 to QryDadosServer.FieldCount - 1 do
         begin
           try
             QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-               QryDadosServer.Fields[i].AsVariant;
+              QryDadosServer.Fields[i].AsVariant;
           except
             Application.ProcessMessages;
           end;
         end;
         try
           QryDadosLocal.Post;
-          QryDadosLocal.CachedUpdates := True;
+          QryDadosLocal.CachedUpdates := true;
           QryDadosLocal.ApplyUpdates(0);
-          erro := False;
+          Erro := false;
         except
           QryDadosLocal.Cancel;
-          erro := True;
+          Erro := true;
           Application.ProcessMessages;
         end;
-        QryDadosServer.Next;
+
+        // Gravar itens
+        with fDMPrincipal do
+        begin
+          vTabela := 'CONDPGTO_DIA';
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosServer := Abrir_Tabela(tpServer);
+        end;
+        while not QryDadosServer.Eof do
+        begin
+          AtualizaStatus('Recebendo Itens Condições de Pagto => ' + FieldByName('ID').AsString);
+          with fDMPrincipal do
+          begin
+            vTabela := 'CONDPGTO_DIA';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            AdicionaDados('ITEM', QryDadosServer.FieldByName('ITEM').AsString, false);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
+          end;
+          if QryDadosLocal.IsEmpty then
+            QryDadosLocal.Insert
+          else
+            QryDadosLocal.Edit;
+
+          for i := 0 to QryDadosServer.FieldCount - 1 do
+          begin
+            try
+              QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+                QryDadosServer.Fields[i].AsVariant;
+            except
+              Application.ProcessMessages;
+            end;
+          end;
+          try
+            QryDadosLocal.Post;
+            QryDadosLocal.CachedUpdates := true;
+            QryDadosLocal.ApplyUpdates(0);
+            Erro := false;
+          except
+            QryDadosLocal.Cancel;
+            Erro := true;
+            Application.ProcessMessages;
+          end;
+          QryDadosServer.Next;
+        end;
+        vTabela := 'CONDPGTO_LOG';
+        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+        Next;
       end;
-      vTabela := 'CONDPGTO_LOG';
-      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
-      Next;
-    end;
   end;
   AtualizaStatus('');
-  {$endregion}
-
-  {$region 'Inclui/Altera Parametros'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Parametros'}
   AtualizaStatus('Verificando Alterações Parâmetros');
   with fDMPrincipal do
   begin
@@ -1282,112 +1327,111 @@ begin
   end;
   with QryDados_Log do
   begin
-    if not (IsEmpty) then
-    while not Eof do
-    begin
-      AtualizaStatus('Recebendo Parâmetros => ' + FieldByName('ID').AsString);
-      with fDMPrincipal do
+    if not(IsEmpty) then
+      while not Eof do
       begin
-        vTabela := 'PARAMETROS';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosLocal  := Abrir_Tabela(tpLocal);
-        QryDadosServer := Abrir_Tabela(tpServer);
-      end;
-      if QryDadosLocal.IsEmpty then
-        QryDadosLocal.Insert
-      else
-        QryDadosLocal.Edit;
-
-      for I := 0 to QryDadosServer.FieldCount - 1 do
-      begin
-        try
-          if not (QryDadosServer.Fields[i].FieldName = 'VERSAO_BANCO') then
-            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-               QryDadosServer.Fields[i].AsVariant;
-        except
-          Application.ProcessMessages;
-        end;
-      end;
-      try
-        QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
-        QryDadosLocal.ApplyUpdates(0);
-        erro := False;
-      except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
-      end;
-
-      //Gravar Parametros Financeiro
-
-      with fDMPrincipal do
-      begin
-        vTabela := 'PARAMETROS_FIN';
-        AdicionaDados('ID',FieldByName('ID').AsString);
-        QryDadosServer := Abrir_Tabela(tpServer);
-      end;
-      while not QryDadosServer.Eof do
-      begin
-        AtualizaStatus('Recebendo Parâmetros Financeiro => ' + FieldByName('ID').AsString);
+        AtualizaStatus('Recebendo Parâmetros => ' + FieldByName('ID').AsString);
         with fDMPrincipal do
         begin
-          vTabela := 'PARAMETROS_FIN';
-          AdicionaDados('ID',FieldByName('ID').AsString);
+          vTabela := 'PARAMETROS';
+          AdicionaDados('ID', FieldByName('ID').AsString);
           QryDadosLocal := Abrir_Tabela(tpLocal);
+          QryDadosServer := Abrir_Tabela(tpServer);
         end;
-
         if QryDadosLocal.IsEmpty then
           QryDadosLocal.Insert
         else
           QryDadosLocal.Edit;
 
-        for I := 0 to QryDadosServer.FieldCount - 1 do
+        for i := 0 to QryDadosServer.FieldCount - 1 do
         begin
           try
-            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-               QryDadosServer.Fields[i].AsVariant;
+            if not(QryDadosServer.Fields[i].FieldName = 'VERSAO_BANCO') then
+              QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+                QryDadosServer.Fields[i].AsVariant;
           except
             Application.ProcessMessages;
           end;
         end;
         try
           QryDadosLocal.Post;
-          QryDadosLocal.CachedUpdates := True;
+          QryDadosLocal.CachedUpdates := true;
           QryDadosLocal.ApplyUpdates(0);
-          erro := False;
+          Erro := false;
         except
           QryDadosLocal.Cancel;
-          erro := True;
+          Erro := true;
           Application.ProcessMessages;
         end;
-        QryDadosServer.Next;
-      end;
 
-      vTabela := 'PARAMETROS_LOG';
-      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
-      Apaga_Registro(fDMPrincipal.FDServer,vTabela, True, vCondicao);
-      Next;
-    end;
+        // Gravar Parametros Financeiro
+
+        with fDMPrincipal do
+        begin
+          vTabela := 'PARAMETROS_FIN';
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosServer := Abrir_Tabela(tpServer);
+        end;
+        while not QryDadosServer.Eof do
+        begin
+          AtualizaStatus('Recebendo Parâmetros Financeiro => ' + FieldByName('ID').AsString);
+          with fDMPrincipal do
+          begin
+            vTabela := 'PARAMETROS_FIN';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
+          end;
+
+          if QryDadosLocal.IsEmpty then
+            QryDadosLocal.Insert
+          else
+            QryDadosLocal.Edit;
+
+          for i := 0 to QryDadosServer.FieldCount - 1 do
+          begin
+            try
+              QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+                QryDadosServer.Fields[i].AsVariant;
+            except
+              Application.ProcessMessages;
+            end;
+          end;
+          try
+            QryDadosLocal.Post;
+            QryDadosLocal.CachedUpdates := true;
+            QryDadosLocal.ApplyUpdates(0);
+            Erro := false;
+          except
+            QryDadosLocal.Cancel;
+            Erro := true;
+            Application.ProcessMessages;
+          end;
+          QryDadosServer.Next;
+        end;
+
+        vTabela := 'PARAMETROS_LOG';
+        vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
+        Next;
+      end;
   end;
   AtualizaStatus('');
-  {$endregion}
-
-  {$Region 'Inclui/Altera Tipo Cobrança'}
+{$ENDREGION}
+{$REGION 'Inclui/Altera Tipo Cobrança'}
   AtualizaStatus('Verificando Alterações em Tipo Cobrança');
   fDMPrincipal.vTabela := 'TIPOCOBRANCA';
-  fDMPrincipal.AdicionaDados('','');
+  fDMPrincipal.AdicionaDados('', '');
   QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
   with QryDadosServer do
   begin
-    if not (IsEmpty) then
+    if not(IsEmpty) then
     while not Eof do
     begin
       AtualizaStatus('Recebendo Tipo Cobranca => ' + FieldByName('ID').AsString);
 
       with fDMPrincipal do
       begin
-        AdicionaDados('ID',FieldByName('ID').AsString);
+        AdicionaDados('ID', FieldByName('ID').AsString);
         QryDadosLocal := Abrir_Tabela(tpLocal);
       end;
       if QryDadosLocal.IsEmpty then
@@ -1395,39 +1439,52 @@ begin
       else
         QryDadosLocal.Edit;
 
-      for I := 0 to QryDadosServer.FieldCount - 1 do
+      for i := 0 to QryDadosServer.FieldCount - 1 do
       begin
         try
           QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
-             QryDadosServer.Fields[i].AsVariant;
+            QryDadosServer.Fields[i].AsVariant;
         except
           Application.ProcessMessages;
         end;
       end;
       try
         QryDadosLocal.Post;
-        QryDadosLocal.CachedUpdates := True;
+        QryDadosLocal.CachedUpdates := true;
         QryDadosLocal.ApplyUpdates(0);
-        erro := False;
+        Erro := false;
       except
-        QryDadosLocal.Cancel;
-        erro := True;
-        Application.ProcessMessages;
+        on E: Exception do
+        begin
+          GravaLogErro('Erro gravando tipo cobranca ' + e.Message);
+          QryDadosLocal.Cancel;
+          Erro := true;
+          Application.ProcessMessages;
+        end;
       end;
       Next;
     end;
+    AtualizaStatus('');
+    QryDadosLocal.Close;
+    QryDadosServer.Close;
   end;
-  AtualizaStatus('');
-  QryDadosLocal.Close;
-  QryDadosServer.Close;
-  {$endregion}
-
+{$ENDREGION}
+except
+  on E: Exception do
+    begin
+//      Finaliza_Processo;
+    end;
+end;
 end;
 
 procedure TfrmPrincipal.Finaliza_Processo;
 begin
+  try
   if Assigned(QryDados_Log) then
     QryDados_Log.Free;
+  except
+
+  end;
 
   if Assigned(QryDadosLocal) then
     QryDadosLocal.Free;
@@ -1442,6 +1499,11 @@ begin
 
 end;
 
+procedure TfrmPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  FTerminate := True;
+end;
+
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
   top := Screen.Height - Height - 50;
@@ -1450,7 +1512,7 @@ end;
 
 procedure TfrmPrincipal.FormShow(Sender: TObject);
 var
-  aVersao : TVersao;
+  aVersao: TVersao;
 begin
   aVersao := TVersao.Create;
   try
@@ -1462,30 +1524,30 @@ end;
 
 procedure TfrmPrincipal.Inicia_Processso;
 var
-  ArquivoIni : String;
-  ImpressoraIni : String;
-  BaseLocal, DriverName, UserName, PassWord : String;
-  BaseServer, DriverNameServer, UserNameServer, PassWordServer, IP : String;
-  Local, Posicao : Integer;
-  Configuracoes : TIniFile;
-  ConfigImpressora : TIniFile;
+  ArquivoIni: String;
+  ImpressoraIni: String;
+  BaseLocal, DriverName, UserName, PassWord: String;
+  BaseServer, DriverNameServer, UserNameServer, PassWordServer, IP: String;
+  Local, Posicao: integer;
+  Configuracoes: TIniFile;
+  ConfigImpressora: TIniFile;
   Decoder64: TIdDecoderMIME;
   Encoder64: TIdEncoderMIME;
 begin
   ReportMemoryLeaksOnShutdown := DebugHook <> 0;
   fDMPrincipal := TDMPrincipal.Create(nil);
-  lblUltimaAtualizacao.Caption := 'Aguardando configurações';
+  AtualizaStatus('Aguardando configurações');
   Decoder64 := TIdDecoderMIME.Create(nil);
   ArquivoIni := ExtractFilePath(Application.ExeName) + '\Config.ini';
   ImpressoraIni := 'C:\$Servisoft\Impressora.ini';
   if not FileExists(ArquivoIni) then
   begin
-    MessageDlg('Arquivo config.ini não encontrado!', mtInformation,[mbOK],0);
+    TGravarLog.New.doSaveLog('Arquivo config.ini não encontrado!');
     Exit;
   end;
   if not FileExists(ImpressoraIni) then
   begin
-    MessageDlg('Arquivo Impressora.ini não encontrado!', mtInformation,[mbOK],0);
+    TGravarLog.New.doSaveLog('Arquivo Impressora.ini não encontrado!');
     Exit;
   end;
 
@@ -1496,28 +1558,29 @@ begin
     ConfigImpressora.Free;
   end;
 
-  Configuracoes := TIniFile.Create(ArquivoINI);
+  Configuracoes := TIniFile.Create(ArquivoIni);
   try
     BaseLocal := Configuracoes.ReadString('SSFacil', 'DATABASE', '');
     DriverName := Configuracoes.ReadString('SSFacil', 'DriverName', '');
-    UserName   := Configuracoes.ReadString('SSFacil', 'UserName',   '');
-    PassWord   := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil', 'PASSWORD', ''));
+    UserName := Configuracoes.ReadString('SSFacil', 'UserName', '');
+    PassWord := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil', 'PASSWORD', ''));
 
     BaseServer := Configuracoes.ReadString('SSFacil_Servidor', 'DATABASE', '');
     DriverNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'DriverName', '');
-    UserNameServer   := Configuracoes.ReadString('SSFacil_Servidor', 'UserName', '');
-    Posicao := Pos(':',BaseServer);
-    IP := Copy(BaseServer,1,Posicao - 1);
-    BaseServer := Copy(BaseServer,Posicao + 1,Length(BaseServer));
-//    IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
-    PassWordServer   := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil_Servidor', 'PASSWORD', ''));
+    UserNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'UserName', '');
+    Posicao := Pos(':', BaseServer);
+    IP := Copy(BaseServer, 1, Posicao - 1);
+    BaseServer := Copy(BaseServer, Posicao + 1, Length(BaseServer));
+    // IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
+    PassWordServer := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil_Servidor',
+      'PASSWORD', ''));
     vTempoCiclo := StrToInt(Configuracoes.ReadString('SSFacil_Servidor', 'TempoCiclo', '20000'));
   finally
     Configuracoes.Free;
     Decoder64.Free;
   end;
 
-  fDMPrincipal.FDLocal.Connected := False;
+  fDMPrincipal.FDLocal.Connected := false;
   fDMPrincipal.FDLocal.Params.Clear;
   fDMPrincipal.FDLocal.DriverName := 'FB';
   fDMPrincipal.FDLocal.Params.Values['DriveId'] := 'FB';
@@ -1525,7 +1588,7 @@ begin
   fDMPrincipal.FDLocal.Params.Values['User_Name'] := UserName;
   fDMPrincipal.FDLocal.Params.Values['Password'] := PassWord;
 
-  fDMPrincipal.FDServer.Connected := False;
+  fDMPrincipal.FDServer.Connected := false;
   fDMPrincipal.FDServer.Params.Clear;
   fDMPrincipal.FDServer.DriverName := 'FB';
   fDMPrincipal.FDServer.Params.Values['DriveId'] := 'FB';
@@ -1534,11 +1597,11 @@ begin
   fDMPrincipal.FDServer.Params.Values['User_Name'] := UserNameServer;
   fDMPrincipal.FDServer.Params.Values['Password'] := PassWordServer;
 
-  JvThreadTimer.Interval := vTempoCiclo;
+  Timer.Interval := vTempoCiclo;
   lblTerminal.Caption := 'Terminal: ' + fDMPrincipal.vTerminal;
-  lblLocal.caption := BaseLocal;
+  lblLocal.Caption := BaseLocal;
   lblLocal.Update;
-  lblServidor.caption := BaseServer;
+  lblServidor.Caption := BaseServer;
   lblServidor.Update;
   QryDados_Log := TFDQuery.Create(nil);
 
@@ -1557,9 +1620,9 @@ var
   vLog: TextFile;
 begin
   try
-    AssignFile(vLog,Arquivo);
+    AssignFile(vLog, Arquivo);
     if not FileExists(Arquivo) then
-      Rewrite(vLog,Arquivo);
+      Rewrite(vLog, Arquivo);
     Append(vLog);
     Writeln(vLog, DateTimeToStr(Now));
     Writeln(vLog, Erro);
@@ -1571,8 +1634,8 @@ end;
 
 procedure TfrmPrincipal.JvThreadTimerTimer(Sender: TObject);
 begin
-  TrayIcon.Animate := True;
-  JvThreadTimer.Enabled := False;
+  TrayIcon.Animate := true;
+  Timer.Enabled := false;
   try
     Application.Title := 'Estabelecendo conexões...';
     lblStatus.Caption := 'Estabelecendo conexões...';
@@ -1617,32 +1680,92 @@ begin
       Application.ProcessMessages;
       shpLocal.Brush.Color := clRed;
       shpServidor.Brush.Color := clRed;
-      lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ',Now);
+      lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ', Now);
       Application.ProcessMessages;
-      TrayIcon.Animate := False;
-      JvThreadTimer.Enabled := True;
+      TrayIcon.Animate := false;
+      Timer.Enabled := true;
       Finaliza_Processo;
-      exit;
+      Exit;
     end;
   finally
     Finaliza_Processo;
     Application.Title := 'Aguardando Proximo Ciclo';
     lblStatus.Caption := 'Aguardando Proximo Ciclo';
     lblStatus.Update;
-    lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ',Now);
+    lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ', Now);
     Application.ProcessMessages;
-    TrayIcon.Animate := False;
-    JvThreadTimer.Enabled := True;
+    TrayIcon.Animate := false;
+    Timer.Enabled := true;
   end;
+end;
+
+procedure TfrmPrincipal.LongRunningTask(TerminatingEvent: TEvent);
+begin
+  try
+    Inicia_Processso;
+    // Verifica se o evento de término foi sinalizado
+    if TerminatingEvent.WaitFor(0) = wrSignaled then
+      Exit; // Se foi sinalizado, sai da thread antes de completar o trabalho
+  finally
+    TerminatingEvent.Free;
+  end;
+end;
+
+procedure TfrmPrincipal.TimerTimer(Sender: TObject);
+begin
+  FTerminate := False;
+  var TerminatingEvent := TEvent.Create;
+  LThread := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      TrayIcon.Animate := true;
+      Timer.Enabled := false;
+      TThread.Synchronize(TThread.CurrentThread,
+        procedure()
+        begin
+          AtualizaStatus('Estabelecendo conexões...');
+          LongRunningTask(TerminatingEvent);
+          Inicia_Processso;
+          if not fDMPrincipal.conectar then
+          begin
+            AtualizaStatus('Falha na Conexão...');
+            shpLocal.Brush.Color := clRed;
+            shpServidor.Brush.Color := clRed;
+          end
+          else
+          begin
+            shpLocal.Brush.Color := clLime;
+            shpServidor.Brush.Color := clLime;
+
+          end;
+        end);
+      ApagaRegistrosExcluidosNoServidor;
+      ImportaServidorTabelaProduto;
+      ExportaMovimentosPDV;
+      ExcluirRegistroServidor;
+    end);
+  LThread.OnTerminate := FinalizaThread;
+  LThread.Start;
 end;
 
 procedure TfrmPrincipal.TrayIconDblClick(Sender: TObject);
 begin
-  TrayIcon.Visible := False;
+  TrayIcon.Visible := false;
   Show();
   WindowState := wsNormal;
   Application.BringToFront();
 end;
 
+procedure TfrmPrincipal.FinalizaThread(Sender: TObject);
+begin
+  if Assigned(TThread(Sender).FatalException) then
+    TGravarLog.New.doSaveLog(Exception(TThread(Sender).FatalException).Message);
+  Finaliza_Processo;
+  AtualizaStatus('Aguardando Proximo Ciclo');
+  lblUltimaAtualizacao.Caption := FormatDateTime('dd/mm/yyyy - hh:mm:ss ', Now);
+  TrayIcon.Animate := false;
+  FTerminate := true;
+  Timer.Enabled := true;
+end;
 
 end.

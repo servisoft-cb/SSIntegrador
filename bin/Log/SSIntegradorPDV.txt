@@ -1,0 +1,39 @@
+Mensagem: 26/07/2023 19:51 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 26/07/2023 20:00 Invalid pointer operation
+Mensagem: 26/07/2023 20:04 Invalid pointer operation
+Mensagem: 26/07/2023 20:07 [FireDAC][Phys][FB]Error reading data from the connection.
+Mensagem: 26/07/2023 20:09 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 26/07/2023 20:11 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 26/07/2023 20:14 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 26/07/2023 20:14 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 26/07/2023 20:16 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 26/07/2023 20:17 [FireDAC][Phys][FB]Unable to complete network request to host "54.210.194.2".
+Failed to establish a connection.
+Mensagem: 28/07/2023 16:40 Gravou Cliente
+Mensagem: 28/07/2023 16:40 Gravou ncm
+Mensagem: 28/07/2023 16:40 Gravou unidade
+Mensagem: 28/07/2023 16:40 Gravou grupo
+Mensagem: 28/07/2023 16:40 Gravou marca
+Mensagem: 28/07/2023 16:41 Gravou produto
+Mensagem: 28/07/2023 16:43 Gravou Cliente
+Mensagem: 28/07/2023 16:43 Gravou ncm
+Mensagem: 28/07/2023 16:43 Gravou unidade
+Mensagem: 28/07/2023 16:43 Gravou grupo
+Mensagem: 28/07/2023 16:43 Gravou marca
+Mensagem: 28/07/2023 16:44 Gravou Cliente
+Mensagem: 28/07/2023 16:44 Gravou ncm
+Mensagem: 28/07/2023 16:44 Gravou unidade
+Mensagem: 28/07/2023 16:44 Gravou grupo
+Mensagem: 28/07/2023 16:44 Gravou marca
+Mensagem: 28/07/2023 16:45 Gravou produto
+Mensagem: 28/07/2023 16:45 Gravou Cliente
+Mensagem: 28/07/2023 16:45 Gravou ncm
+Mensagem: 28/07/2023 16:45 Gravou unidade
+Mensagem: 28/07/2023 16:45 Gravou grupo
+Mensagem: 28/07/2023 16:45 Gravou marca

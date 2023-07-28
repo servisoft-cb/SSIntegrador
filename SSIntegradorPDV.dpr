@@ -11,7 +11,9 @@ uses
   Classe.Campos in 'Classe.Campos.pas',
   System.SysUtils,
   SmartPoint in 'SmartPoint.pas',
-  Classe.Versao in 'Classe.Versao.pas';
+  Classe.Versao in 'Classe.Versao.pas',
+  Classe.Thread in 'Classe.Thread.pas',
+  GravarLog in 'GravarLog.pas';
 
 {$R *.res}
 var

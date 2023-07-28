@@ -1,0 +1,75 @@
+03/03/23 10:48:07 - Formulário: frmPrincipal
+03/03/23 10:48:07 - Caption: SSIntegradorPDV v.1.0.0.12
+03/03/23 10:48:07 - Erro: EAccessViolation
+03/03/23 10:48:07 - Erro: Access violation at address 007C4639 in module 'SSIntegradorPDV.exe'. Read of address 00000000
+03/03/23 10:48:07 - ================================
+13/06/23 08:46:43 - Formulário: frmPrincipal
+13/06/23 08:46:43 - Caption: SSIntegradorPDV v.1.0.0.0
+13/06/23 08:46:43 - Erro: EThreadExternalException
+13/06/23 08:46:43 - Erro: Cannot call CheckTerminated on an externally created thread
+13/06/23 08:46:43 - ================================
+16/06/23 13:44:55 - Formulário: frmPrincipal
+16/06/23 13:44:55 - Caption: SSIntegradorPDV v.1.0.0.0
+16/06/23 13:44:55 - Erro: EAccessViolation
+16/06/23 13:44:55 - Erro: Access violation at address 00489218 in module 'SSIntegradorPDV.exe'. Read of address 00000024
+16/06/23 13:44:55 - ================================
+16/06/23 13:44:56 - Formulário: frmPrincipal
+16/06/23 13:44:56 - Caption: SSIntegradorPDV v.1.0.0.0
+16/06/23 13:44:56 - Erro: EAccessViolation
+16/06/23 13:44:56 - Erro: Access violation at address 00489218 in module 'SSIntegradorPDV.exe'. Read of address 00000024
+16/06/23 13:44:56 - ================================
+16/06/23 13:44:56 - Formulário: frmPrincipal
+16/06/23 13:44:56 - Caption: SSIntegradorPDV v.1.0.0.0
+16/06/23 13:44:56 - Erro: EAccessViolation
+16/06/23 13:44:56 - Erro: Access violation at address 00489218 in module 'SSIntegradorPDV.exe'. Read of address 00000024
+16/06/23 13:44:56 - ================================
+24/07/23 09:01:25 - Formulário: frmPrincipal
+24/07/23 09:01:25 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:01:25 - Erro: EThread
+24/07/23 09:01:25 - Erro: Thread Error: Identificador inválido (6)
+24/07/23 09:01:25 - ================================
+24/07/23 09:01:32 - Formulário: frmPrincipal
+24/07/23 09:01:32 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:01:32 - Erro: EAccessViolation
+24/07/23 09:01:32 - Erro: Access violation at address 00000000 in module 'SSIntegradorPDV.exe'. Read of address 00000000
+24/07/23 09:01:32 - ================================
+24/07/23 09:13:38 - Formulário: frmPrincipal
+24/07/23 09:13:38 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:13:38 - Erro: EThread
+24/07/23 09:13:38 - Erro: Thread Error: Identificador inválido (6)
+24/07/23 09:13:38 - ================================
+24/07/23 09:14:26 - Formulário: frmPrincipal
+24/07/23 09:14:26 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:14:26 - Erro: EThread
+24/07/23 09:14:26 - Erro: Thread Error: Identificador inválido (6)
+24/07/23 09:14:26 - ================================
+24/07/23 09:15:21 - Formulário: frmPrincipal
+24/07/23 09:15:21 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:15:21 - Erro: EThread
+24/07/23 09:15:21 - Erro: Thread Error: Identificador inválido (6)
+24/07/23 09:15:21 - ================================
+24/07/23 09:15:25 - Formulário: 
+24/07/23 09:15:25 - Caption: 
+24/07/23 09:15:25 - Erro: EAccessViolation
+24/07/23 09:15:25 - Erro: Access violation at address 007D7D22 in module 'SSIntegradorPDV.exe'. Read of address 00000434
+24/07/23 09:15:25 - ================================
+24/07/23 09:16:07 - Formulário: frmPrincipal
+24/07/23 09:16:07 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:16:07 - Erro: EThread
+24/07/23 09:16:07 - Erro: Thread Error: Identificador inválido (6)
+24/07/23 09:16:07 - ================================
+24/07/23 09:16:11 - Formulário: frmPrincipal
+24/07/23 09:16:11 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:16:11 - Erro: EThread
+24/07/23 09:16:11 - Erro: Cannot terminate an externally created thread
+24/07/23 09:16:11 - ================================
+24/07/23 09:19:42 - Formulário: frmPrincipal
+24/07/23 09:19:42 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:19:42 - Erro: EThread
+24/07/23 09:19:42 - Erro: Thread Error: Identificador inválido (6)
+24/07/23 09:19:42 - ================================
+24/07/23 09:19:47 - Formulário: frmPrincipal
+24/07/23 09:19:47 - Caption: SSIntegradorPDV v.1.0.0.0
+24/07/23 09:19:47 - Erro: EThread
+24/07/23 09:19:47 - Erro: Cannot terminate an externally created thread
+24/07/23 09:19:47 - ================================
