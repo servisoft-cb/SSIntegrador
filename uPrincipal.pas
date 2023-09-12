@@ -1462,6 +1462,9 @@ try
           Application.ProcessMessages;
         end;
       end;
+      vTabela := 'TIPOCOBRANCA_LOG';
+      vCondicao := 'and ID = ' + FieldByName('ID').AsString;
+      Apaga_Registro(fDMPrincipal.FDServer, vTabela, true, vCondicao);
       Next;
     end;
     AtualizaStatus('');
