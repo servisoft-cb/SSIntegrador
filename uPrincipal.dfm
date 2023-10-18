@@ -312,4 +312,9 @@ object frmPrincipal: TfrmPrincipal
     Left = 360
     Top = 24
   end
+  object TimerMinimize: TTimer
+    OnTimer = TimerMinimizeTimer
+    Left = 192
+    Top = 32
+  end
 end

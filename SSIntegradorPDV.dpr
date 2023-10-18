@@ -13,7 +13,8 @@ uses
   SmartPoint in 'SmartPoint.pas',
   Classe.Versao in 'Classe.Versao.pas',
   Classe.Thread in 'Classe.Thread.pas',
-  GravarLog in 'GravarLog.pas';
+  GravarLog in 'GravarLog.pas',
+  Model.CupomFiscalItem in 'Model\Model.CupomFiscalItem.pas';
 
 {$R *.res}
 var
