@@ -910,6 +910,53 @@ try
   QryDados_Log.Close;
   AtualizaStatus('');
 {$ENDREGION}
+{$REGION 'Inclui/Altera CST ICMS'}
+  AtualizaStatus('Verificando Alterações em CST ICMS');
+  fDMPrincipal.vTabela := 'TAB_CSTICMS_LOG';
+  QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
+  with QryDados_Log do
+  begin
+    if not(IsEmpty) then
+      while not Eof do
+      begin
+        with fDMPrincipal do
+        begin
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          vTabela := 'TAB_CSTICMS';
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+        QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
+        try
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
+        except
+          QryDadosLocal.Cancel;
+          Erro := true;
+          Application.ProcessMessages;
+        end;
+        fDMPrincipal.vTabela := 'TAB_CSTICMS_LOG';
+        vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, fDMPrincipal.vTabela, true, vCondicao);
+        Next;
+      end;
+  end;
+  AtualizaStatus('');
+{$ENDREGION}
 {$REGION 'Inclui/Altera NCM'}
   AtualizaStatus('Verificando Alterações em NCM');
   fDMPrincipal.vTabela := 'TAB_NCM_LOG';
@@ -1375,8 +1422,8 @@ try
         begin
           vTabela := 'PARAMETROS';
           AdicionaDados('ID', FieldByName('ID').AsString);
-          QryDadosLocal := Abrir_Tabela(tpLocal);
-          QryDadosServer := Abrir_Tabela(tpServer);
+          QryDadosLocal := Abrir_Tabela_Parametro(tpLocal);
+          QryDadosServer := Abrir_Tabela_Parametro(tpServer);
         end;
         if QryDadosLocal.IsEmpty then
           QryDadosLocal.Insert
@@ -1386,8 +1433,7 @@ try
         for i := 0 to QryDadosServer.FieldCount - 1 do
         begin
           try
-            if not(QryDadosServer.Fields[i].FieldName = 'VERSAO_BANCO') then
-              QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
                 QryDadosServer.Fields[i].AsVariant;
           except
             Application.ProcessMessages;
