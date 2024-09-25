@@ -1,5 +1,4 @@
 object DMPrincipal: TDMPrincipal
-  OldCreateOrder = False
   OnCreate = DataModuleCreate
   OnDestroy = DataModuleDestroy
   Height = 232

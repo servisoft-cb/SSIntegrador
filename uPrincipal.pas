@@ -903,6 +903,53 @@ try
   QryDados_Log.Close;
   AtualizaStatus('');
 {$ENDREGION}
+{$REGION 'Incluindo OBS Lei'}
+  AtualizaStatus('Verificando Alterações em OBS Lei');
+  fDMPrincipal.vTabela := 'OBS_LEI';
+  fDMPrincipal.AdicionaDados('', '');
+  QryDadosServer := fDMPrincipal.Abrir_Tabela(tpServer);
+  with QryDadosServer do
+  begin
+    if not(IsEmpty) then
+      while not Eof do
+      begin
+        with fDMPrincipal do
+        begin
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosLocal := Abrir_Tabela(tpLocal);
+        end;
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            Application.ProcessMessages;
+          end;
+        end;
+        try
+          QryDadosLocal.Post;
+          QryDadosLocal.CachedUpdates := true;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
+        except
+          QryDadosLocal.Cancel;
+          Erro := true;
+          Application.ProcessMessages;
+        end;
+        Next;
+      end;
+  end;
+  AtualizaStatus('');
+  if Assigned(QryDadosLocal) then
+    QryDadosLocal.Close;
+  QryDadosServer.Close;
+{$ENDREGION}
+
 {$REGION 'Inclui/Altera CST ICMS'}
   AtualizaStatus('Verificando Alterações em CST ICMS');
   fDMPrincipal.vTabela := 'TAB_CSTICMS_LOG';
@@ -1557,6 +1604,117 @@ try
     QryDadosServer.Close;
   end;
 {$ENDREGION}
+{$REGION 'Inclui/Altera CFOP'}
+  AtualizaStatus('Verificando Alterações em CFOPs');
+  fDMPrincipal.vTabela := 'TAB_CFOP_LOG';
+  fDMPrincipal.ListaTipo.Clear;
+  fDMPrincipal.ListaTipo.Add('0');
+  fDMPrincipal.ListaTipo.Add('1');
+  QryDados_Log.Close;
+  QryDados_Log := fDMPrincipal.Abrir_Tabela_Log(tpServer);
+  with QryDados_Log do
+  begin
+    if not(IsEmpty) then
+      while not Eof do
+      begin
+        with fDMPrincipal do
+        begin
+          vTabela := 'TAB_CFOP';
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosLocal.Close;
+          QryDadosLocal := Abrir_Tabela_CFOP(tpLocal);
+        end;
+
+        if QryDadosLocal.IsEmpty then
+          QryDadosLocal.Insert
+        else
+          QryDadosLocal.Edit;
+        QryDadosServer.Close;
+        QryDadosServer := fDMPrincipal.Abrir_Tabela_CFOP(tpServer);
+        for i := 0 to QryDadosServer.FieldCount - 1 do
+        begin
+          try
+            QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+              QryDadosServer.Fields[i].AsVariant;
+          except
+            on E : Exception do
+              TGravarLog.New.doSaveLog('Erro CFOP: ' + e.Message);
+          end;
+        end;
+        try
+          QryDadosLocal.CachedUpdates := True;
+          QryDadosLocal.Post;
+          QryDadosLocal.ApplyUpdates(0);
+          Erro := false;
+        except
+          on E : Exception do
+          begin
+            QryDadosLocal.Cancel;
+            Erro := true;
+            Application.ProcessMessages;
+            TGravarLog.New.doSaveLog('Erro CFOP: ' + e.Message);
+          end;
+        end;
+
+        //Variações
+        with fDMPrincipal do
+        begin
+          vTabela := 'TAB_CFOP_VARIACAO';
+          AdicionaDados('ID', FieldByName('ID').AsString);
+          QryDadosServer.Close;
+          QryDadosServer := Abrir_Tabela_CFOP_VARIACAO(tpServer);
+        end;
+        AtualizaStatus('Recebendo Variação da CFOP');
+        QryDadosServer.First;
+        while not QryDadosServer.eof do
+        begin
+          fDMPrincipal.AdicionaDados('ID', FieldByName('ID').AsString);
+          fDMPrincipal.AdicionaDados('ITEM', QryDadosServer.FieldByName('ITEM').AsString,False);
+          QryDadosLocal.Close;
+          QryDadosLocal := fDMPrincipal.Abrir_Tabela_CFOP_VARIACAO(tpLocal);
+          if QryDadosLocal.IsEmpty then
+            QryDadosLocal.Insert
+          else
+            QryDadosLocal.Edit;
+
+          for i := 0 to QryDadosServer.FieldCount - 1 do
+          begin
+            try
+              QryDadosLocal.FindField(QryDadosServer.Fields[i].FieldName).AsVariant :=
+                QryDadosServer.Fields[i].AsVariant;
+            except
+              on E : Exception do
+                TGravarLog.New.doSaveLog('Erro CFOP Variação: ' + e.Message);
+            end;
+          end;
+          try
+            QryDadosLocal.CachedUpdates := True;
+            QryDadosLocal.Post;
+            QryDadosLocal.ApplyUpdates(0);
+            Erro := false;
+          except
+            on E : Exception do
+            begin
+              QryDadosLocal.Cancel;
+              Erro := true;
+              Application.ProcessMessages;
+              TGravarLog.New.doSaveLog('Erro CFOP variação: ' + e.Message);
+            end;
+          end;
+          QryDadosServer.Next;
+        end;
+
+
+
+        fDMPrincipal.vTabela := 'TAB_CFOP_LOG';
+        vCondicao := 'AND ID = ' + FieldByName('ID').AsString;
+        Apaga_Registro(fDMPrincipal.FDServer, fDMPrincipal.vTabela, true, vCondicao);
+        Next;
+      end;
+  end;
+  AtualizaStatus('');
+{$ENDREGION}
+
 except
   on E: Exception do
     begin

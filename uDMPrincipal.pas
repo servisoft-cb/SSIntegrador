@@ -52,6 +52,8 @@ type
     function Abrir_Tabela_CupomItem(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_CupomPendente(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_Parametro(Conexao: TEnumConexao): TFDQuery;
+    function Abrir_Tabela_CFOP(Conexao: TEnumConexao): TFDQuery;
+    function Abrir_Tabela_CFOP_VARIACAO(Conexao: TEnumConexao): TFDQuery;
     procedure AdicionaDados(aValue, aCampo: String; Clear: boolean = True);
 
     { Public declarations }
@@ -69,6 +71,85 @@ uses
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 {$R *.dfm}
 { TDMPrincipal }
+
+function TDMPrincipal.Abrir_Tabela_CFOP(Conexao: TEnumConexao): TFDQuery;
+var
+  Consulta: TFDQuery;
+  Condicao: String;
+  i: Integer;
+begin
+  Condicao := '';
+  Consulta := TFDQuery.Create(Self);
+  case Conexao of
+    tpLocal:
+      Consulta.Connection := FDLocal;
+    tpServer:
+      Consulta.Connection := FDServer;
+  end;
+  Consulta.Close;
+  Consulta.SQL.Clear;
+  Consulta.SQL.Add('select ID, CODCFOP, NOME, ENTRADASAIDA, GERAR_IPI,  ');
+  Consulta.SQL.Add('GERAR_ICMS, GERAR_DUPLICATA, SOMAR_VLRTOTALPRODUTO, NOME_INTERNO, ');
+  Consulta.SQL.Add('ID_CSTICMS, ID_CSTIPI, COPIARNOTATRIANGULAR, ID_PIS, ID_COFINS, ');
+  Consulta.SQL.Add('TIPO_PIS, TIPO_COFINS, GERAR_ICMS_SIMPLES, ');
+  Consulta.SQL.Add('TIPO_EMPRESA, SUBSTITUICAO_TRIB, MVA, PERC_COFINS, PERC_PIS, ');
+  Consulta.SQL.Add('LEI, BENEFICIAMENTO, MAOOBRA, OBS_CLASSIFICACAO, ');
+  Consulta.SQL.Add('GERAR_TRIBUTO, PERC_TRIBUTO, TIPO_IND_VEN, INATIVO, DEVOLUCAO, ');
+  Consulta.SQL.Add('GERAR_ESTOQUE_MP, ID_OBS_LEI, GERAR_DESONERACAO_ICMS, GERAR_ESTOQUE, ');
+  Consulta.SQL.Add('BAIXAR_FUT, USA_NFCE, CALCULAR_ICMS_DIFERIDO, USA_REGRA_ORGAO_PUBLICO, ');
+  Consulta.SQL.Add('NOME_ORIGINAL, FATURAMENTO, ID_COFINS_SIMP, ID_PIS_SIMP, TIPO_PIS_SIMP, ');
+  Consulta.SQL.Add('TIPO_COFINS_SIMP, PERC_COFINS_SIMP, PERC_PIS_SIMP, ');
+  Consulta.SQL.Add('NFEFINALIDADE, GERAR_CUSTO_MEDIO, USA_UNIDADE_TRIB, ALT_NCM_CUSTO, ');
+  Consulta.SQL.Add('MARCAR_NCM_ST, ENVIAR_BASE_ST, BENEFICIAMENTO_POSSE, EXIGE_PESO, ');
+  Consulta.SQL.Add('CONTROLAR_CONFIG, USA_NAO_CONTR_FISICA, DEPARA_COM_CST, COMBUSTIVEL, ');
+  Consulta.SQL.Add('ALT_CUSTO, CONTROLA_FINALIDADE, GERAR_RFID, ENVIAR_CODCORFORN, ');
+  Consulta.SQL.Add('GERAR_PEDIDO, SOMAR_PESO, ENTRAR_COMO_CLIENTE, LANCAR_BASE_ICMS_NTE, ');
+  Consulta.SQL.Add('COD_MODELO_NOTA, CTE, CREDITA_ST, USA_NUMNOTA_XPED, ALT_VENDA, ');
+  Consulta.SQL.Add('PERMITE_CNPJ_IGUAL, USA_RASTREABILIDADE ');
+  Consulta.SQL.Add('from TAB_CFOP WHERE 0 = 0 ');
+  for i := 0 to Pred(ListaDados.Count) do
+  begin
+    if ListaDados[i].Campo <> EmptyStr then
+      Consulta.SQL.Add(' AND ' + ListaDados[i].Campo + ' = ' + ListaDados[i].Valor);
+  end;
+  Consulta.Open;
+  Result := Consulta;
+end;
+
+function TDMPrincipal.Abrir_Tabela_CFOP_VARIACAO(
+  Conexao: TEnumConexao): TFDQuery;
+var
+  Consulta: TFDQuery;
+  Condicao: String;
+  i: Integer;
+begin
+  Condicao := '';
+  Consulta := TFDQuery.Create(Self);
+  case Conexao of
+    tpLocal:
+      Consulta.Connection := FDLocal;
+    tpServer:
+      Consulta.Connection := FDServer;
+  end;
+  Consulta.Close;
+  Consulta.SQL.Clear;
+  Consulta.SQL.Add('select ID, ITEM, ID_CSTICMS, ID_CSTIPI, ID_PIS, ID_COFINS, ');
+  Consulta.SQL.Add('ID_OPERACAO_NOTA, TIPO_EMPRESA, TIPO_CLIENTE, UF_CLIENTE, ');
+  Consulta.SQL.Add('FINALIDADE, CONTROLAR_ICMS, CONTROLAR_REDUCAO, CONTROLAR_IPI, ');
+  Consulta.SQL.Add('CONTROLAR_SUBSTICMS, CONTROLAR_DIFERIMENTO, NOME, ');
+  Consulta.SQL.Add('PESSOA_CLIENTE, LEI, PERC_TRIBUTO, PERC_PIS, PERC_COFINS, ');
+  Consulta.SQL.Add('TIPO_PIS, TIPO_COFINS, ID_OBS_LEI, ID_ENQIPI, ');
+  Consulta.SQL.Add('TIPO_CONSUMIDOR, TIPO_CONTRIBUINTE, CALCULAR_ST, COD_BENEF, ');
+  Consulta.SQL.Add('CALCULAR_FCP, ID_CST_COM_IPI ');
+  Consulta.SQL.Add('from TAB_CFOP_VARIACAO WHERE 0 = 0 ');
+  for i := 0 to Pred(ListaDados.Count) do
+  begin
+    if ListaDados[i].Campo <> EmptyStr then
+      Consulta.SQL.Add(' AND ' + ListaDados[i].Campo + ' = ' + ListaDados[i].Valor);
+  end;
+  Consulta.Open;
+  Result := Consulta;
+end;
 
 function TDMPrincipal.Abrir_Tabela_CupomItem(Conexao: TEnumConexao): TFDQuery;
 var
