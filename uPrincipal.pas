@@ -764,13 +764,6 @@ begin
           with fDMPrincipal do
           begin
             vTabela := 'CUPOMFISCAL_PENDENTE';
-
-//            FField := TIntegerField.Create(QryDadosServer);
-//            FField.FieldName := 'ID';
-//            FField.FieldKind := fkCalculated;
-//            FField.ProviderFlags := [pfInUpdate, pfInWhere, pfInKey, pfHidden];
-//
-//            QryDadosServer.FieldDefs.Add(FField.FieldName, ftInteger);
             AdicionaDados('ID', 'NULL');
             QryDadosServer := Abrir_Tabela_CupomPendente(tpServer);
             QryDadosServer.Insert;

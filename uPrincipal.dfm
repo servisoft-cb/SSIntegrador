@@ -9,11 +9,9 @@ object frmPrincipal: TfrmPrincipal
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlPrincipal: TPanel
     Left = 0
@@ -22,6 +20,8 @@ object frmPrincipal: TfrmPrincipal
     Height = 129
     Align = alClient
     TabOrder = 0
+    ExplicitWidth = 418
+    ExplicitHeight = 128
     object lblTerminal: TLabel
       Left = 1
       Top = 1
