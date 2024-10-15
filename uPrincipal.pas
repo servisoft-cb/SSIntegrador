@@ -1774,8 +1774,8 @@ procedure TfrmPrincipal.Inicia_Processso;
 var
   ArquivoIni: String;
   ImpressoraIni: String;
-  BaseLocal, DriverName, UserName, PassWord: String;
-  BaseServer, DriverNameServer, UserNameServer, PassWordServer, IP: String;
+  BaseLocal, DriverName, UserName, PassWord, Porta: String;
+  BaseServer, DriverNameServer, UserNameServer, PassWordServer, PortaServer, IP: String;
   Local, Posicao: integer;
   Configuracoes: TIniFile;
   ConfigImpressora: TIniFile;
@@ -1812,6 +1812,9 @@ begin
     DriverName := Configuracoes.ReadString('SSFacil', 'DriverName', '');
     UserName := Configuracoes.ReadString('SSFacil', 'UserName', '');
     PassWord := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil', 'PASSWORD', ''));
+    Porta := Configuracoes.ReadString('SSFacil', 'Porta', '');
+    if trim(Porta) = '' then
+      Porta := '3050';
 
     BaseServer := Configuracoes.ReadString('SSFacil_Servidor', 'DATABASE', '');
     DriverNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'DriverName', '');
@@ -1822,6 +1825,9 @@ begin
     // IP := Configuracoes.ReadString('SSFacil_Servidor','IP','');
     PassWordServer := Decoder64.DecodeString(Configuracoes.ReadString('SSFacil_Servidor',
       'PASSWORD', ''));
+    PortaServer := Configuracoes.ReadString('SSFacil_Servidor', 'Porta', '');
+    if trim(PortaServer) = '' then
+      PortaServer := '3050';
     vTempoCiclo := StrToInt(Configuracoes.ReadString('SSFacil_Servidor', 'TempoCiclo', '20000'));
   finally
     Configuracoes.Free;
@@ -1835,6 +1841,7 @@ begin
   fDMPrincipal.FDLocal.Params.Values['DataBase'] := BaseLocal;
   fDMPrincipal.FDLocal.Params.Values['User_Name'] := UserName;
   fDMPrincipal.FDLocal.Params.Values['Password'] := PassWord;
+  fDMPrincipal.FDLocal.Params.Values['Porta'] := Porta;
 
   fDMPrincipal.FDServer.Connected := false;
   fDMPrincipal.FDServer.Params.Clear;
@@ -1844,6 +1851,7 @@ begin
   fDMPrincipal.FDServer.Params.Values['Server'] := IP;
   fDMPrincipal.FDServer.Params.Values['User_Name'] := UserNameServer;
   fDMPrincipal.FDServer.Params.Values['Password'] := PassWordServer;
+  fDMPrincipal.FDServer.Params.Values['Porta'] := PortaServer;
 
   Timer.Interval := vTempoCiclo;
   lblTerminal.Caption := 'Terminal: ' + fDMPrincipal.vTerminal;

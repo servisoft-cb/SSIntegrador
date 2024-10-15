@@ -7,9 +7,11 @@ object DMPrincipal: TDMPrincipal
     Params.Strings = (
       'User_Name=sysdba'
       'Password=masterkey'
-      'Port=3050'
+      'Port=3052'
       'CharacterSet=WIN1252'
+      'Database=D:\Fontes\$Servisoft\Bases\SSFacil\SSFacil.FDB'
       'DriverID=FB')
+    Connected = True
     LoginPrompt = False
     Left = 16
     Top = 16
