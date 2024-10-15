@@ -1815,7 +1815,6 @@ begin
     Porta := Configuracoes.ReadString('SSFacil', 'Porta', '');
     if trim(Porta) = '' then
       Porta := '3050';
-
     BaseServer := Configuracoes.ReadString('SSFacil_Servidor', 'DATABASE', '');
     DriverNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'DriverName', '');
     UserNameServer := Configuracoes.ReadString('SSFacil_Servidor', 'UserName', '');
@@ -1833,7 +1832,6 @@ begin
     Configuracoes.Free;
     Decoder64.Free;
   end;
-
   fDMPrincipal.FDLocal.Connected := false;
   fDMPrincipal.FDLocal.Params.Clear;
   fDMPrincipal.FDLocal.DriverName := 'FB';
@@ -1859,6 +1857,7 @@ begin
   lblLocal.Update;
   lblServidor.Caption := BaseServer;
   lblServidor.Update;
+
 //  QryDados_Log := TFDQuery.Create(nil);
 
 //  QryDadosLocal := TFDQuery.Create(nil);

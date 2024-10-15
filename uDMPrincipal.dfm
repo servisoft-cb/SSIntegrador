@@ -11,7 +11,6 @@ object DMPrincipal: TDMPrincipal
       'CharacterSet=WIN1252'
       'Database=D:\Fontes\$Servisoft\Bases\SSFacil\SSFacil.FDB'
       'DriverID=FB')
-    Connected = True
     LoginPrompt = False
     Left = 16
     Top = 16
@@ -19,11 +18,14 @@ object DMPrincipal: TDMPrincipal
   object FDServer: TFDConnection
     Params.Strings = (
       'Protocol=TCPIP'
-      'Port=3050'
+      'Port=3052'
       'CharacterSet=WIN1252'
       'User_Name=sysdba'
       'Password=masterkey'
-      'DriverID=FB')
+      'DriverID=FB'
+      
+        'database=192.168.0.99:D:\Fontes\$Servisoft\Bases\SSFacil\SSFacil' +
+        '.FDB')
     LoginPrompt = False
     Left = 80
     Top = 16
