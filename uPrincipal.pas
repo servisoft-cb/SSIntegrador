@@ -763,15 +763,20 @@ begin
 
           with fDMPrincipal do
           begin
-            vTabela := 'CUPOMFISCAL_PENDENTE';
-            AdicionaDados('ID', 'NULL');
-            QryDadosServer := Abrir_Tabela_CupomPendente(tpServer);
-            QryDadosServer.Insert;
-            QryDadosServer.FieldByName('ID_CUPOM').AsInteger := vIDNovo;
-            QryDadosServer.FieldByName('ID_TERMINAL').AsString := fDMPrincipal.vTerminal;
-            QryDadosServer.CachedUpdates := true;
-            QryDadosServer.Post;
-            QryDadosServer.ApplyUpdates(0);
+            try
+              vTabela := 'CUPOMFISCAL_PENDENTE';
+              AdicionaDados('ID', 'NULL');
+              QryDadosServer := Abrir_Tabela_CupomPendente(tpServer);
+              QryDadosServer.Insert;
+              QryDadosServer.FieldByName('ID_CUPOM').AsInteger := vIDNovo;
+              QryDadosServer.FieldByName('ID_TERMINAL').AsString := fDMPrincipal.vTerminal;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E : Exception do
+                GravaLogErro(e.Message);
+            end;
           end;
 
           // Gravar Estoque
