@@ -86,6 +86,7 @@ type
     procedure Finaliza_Processo;
     procedure FinalizaThread(Sender: TObject);
     procedure AtualizaLabel(aValue: String);
+    procedure _freeAndNilQry;
 
   end;
 
@@ -294,7 +295,7 @@ function TfrmPrincipal.ExportaMovimentosPDV: Boolean;
 var
   vCondicao, vTabela, Prazo: string;
   i, vIDNovo, Cont: integer;
-  Erro, erroProcedure, CupomExiste: Boolean;
+  Erro, erroProcedure, CupomExiste, FechamentoExiste: Boolean;
   FField : TField;
   FHoraIni, FHoraFin : TTime;
 begin
@@ -400,26 +401,7 @@ begin
   try
     AtualizaStatus('Verificando Cupom Fiscal');
     Cont := 0;
-    if Assigned(QryDados_Log) then
-    begin
-      FreeAndNil(QryDados_Log);
-//      QryDados_Log := TFDQuery.Create(nil);
-    end;
-
-//    if Assigned(QryDadosLocal) then
-//    begin
-//      FreeAndNil(QryDadosLocal);
-//      QryDadosLocal := TFDQuery.Create(nil);
-//      QryDadosLocal.Connection := fDMPrincipal.FDLocal;
-//    end;
-
-    if Assigned(QryDadosServer) then
-    begin
-      FreeAndNil(QryDadosServer);
-//      QryDadosServer := TFDQuery.Create(nil);
-//      QryDadosServer.Connection := fDMPrincipal.FDServer;
-    end;
-
+    _freeAndNilQry;
     with fDMPrincipal do
     begin
       vTabela := 'CUPOMFISCAL_LOG';
@@ -435,7 +417,6 @@ begin
       if not(IsEmpty) then
         while not Eof do
         begin
-//          AtualizaStatus('Enviado Cupom Fiscal => ' + FieldByName('ID').AsString);
           Inc(Cont);
           CupomExiste := False;
           with fDMPrincipal do
@@ -449,7 +430,6 @@ begin
               next;
               Continue;
             end;
-
             vTabela := 'CUPOMFISCAL';
             AdicionaDados('NUMCUPOM', QryDadosLocal.FieldByName('NUMCUPOM').AsString);
             AdicionaDados('FILIAL', QryDadosLocal.FieldByName('FILIAL').AsString, False);
@@ -506,7 +486,6 @@ begin
               Application.ProcessMessages;
             end;
           end;
-
           // Gravar itens
           with fDMPrincipal do
           begin
@@ -515,10 +494,8 @@ begin
             QryDadosLocal := Abrir_Tabela_CupomItem(tpLocal);
           end;
           AtualizaStatus('Enviado Itens do Cupom');
-
           while not QryDadosLocal.Eof do
           begin
-//            AtualizaStatus('Enviado Itens do Cupom => ' + FieldByName('ID').AsString);
             with fDMPrincipal do
             begin
               vTabela := 'CUPOMFISCAL_ITENS';
@@ -556,7 +533,6 @@ begin
             end;
             QryDadosLocal.Next;
           end;
-
           // Gravar itens sem
           with fDMPrincipal do
           begin
@@ -565,10 +541,8 @@ begin
             QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
           AtualizaStatus('Enviado Itens do Cupom Sem');
-
           while not QryDadosLocal.Eof do
           begin
-//            AtualizaStatus('Enviado Itens do Cupom Sem => ' + FieldByName('ID').AsString);
             with fDMPrincipal do
             begin
               vTabela := 'CUPOMFISCAL_ITENS_SEM';
@@ -615,10 +589,8 @@ begin
             QryDadosLocal := Abrir_Tabela_CupomParc(tpLocal);
           end;
           AtualizaStatus('Enviado Parcelas do Cupom');
-
           while not QryDadosLocal.Eof do
           begin
-//            AtualizaStatus('Enviado Parcelas do Cupom => ' + FieldByName('ID').AsString);
             with fDMPrincipal do
             begin
               vTabela := 'CUPOMFISCAL_PARC';
@@ -668,7 +640,6 @@ begin
           AtualizaStatus('Enviado Troca do Cupom');
           while not QryDadosLocal.Eof do
           begin
-//            AtualizaStatus('Enviado Troca do Cupom => ' + FieldByName('ID').AsString);
             with fDMPrincipal do
             begin
               vTabela := 'CUPOMFISCAL_TROCA';
@@ -710,7 +681,6 @@ begin
             end;
             QryDadosLocal.Next;
           end;
-
           // Gravar Cupom Fiscal FormaPagto
           with fDMPrincipal do
           begin
@@ -718,11 +688,9 @@ begin
             AdicionaDados('ID', FieldByName('ID').AsString);
             QryDadosLocal := Abrir_Tabela(tpLocal);
           end;
-
           AtualizaStatus('Enviado Forma Pagto do Cupom');
           while not QryDadosLocal.Eof do
           begin
-//            AtualizaStatus('Enviado Forma Pagto do Cupom => ' + FieldByName('ID').AsString);
             with fDMPrincipal do
             begin
               vTabela := 'CUPOMFISCAL_FORMAPGTO';
@@ -778,55 +746,6 @@ begin
                 GravaLogErro(e.Message);
             end;
           end;
-
-          // Gravar Estoque
-//          repeat
-//            try
-//              AtualizaStatus('Gravando Estoque => ' + FieldByName('ID').AsString);
-//              fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE(' +
-//                IntToStr(vIDNovo) + ', ''CFI'')');
-//              erroProcedure := false;
-//            except
-//              on E: Exception do
-
-//              begin
-//                GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
-//                fDMPrincipal.FDServer.Rollback;
-//                erroProcedure := true;
-//              end;
-//            end;
-//
-//          until not erroProcedure;
-
-          // Gravar Estoque Troca
-
-//          repeat
-//            try
-//              AtualizaStatus('Gravando Estoque Troca  => ' + FieldByName('ID').AsString);
-//              fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_ESTOQUE(' +
-//                IntToStr(vIDNovo) + ', ''TRO'')');
-//              erroProcedure := false
-//            except
-//              on E: Exception do
-//              begin
-//                GravaLogErro('Erro Gravando Movimento estoque nº: ' + IntToStr(vIDNovo));
-//                fDMPrincipal.FDServer.Rollback;
-//                erroProcedure := true;
-//              end;
-//            end;
-//          until not erroProcedure;
-
-          // Gravar Duplicata - Histórico - Comissão - Financeiro
-//          try
-//            AtualizaStatus('Gravando Duplicata => ' + FieldByName('ID').AsString);
-//            fDMPrincipal.FDServer.ExecSQL('EXECUTE PROCEDURE PRC_GRAVAR_DUPLICATA_CUPOM(' +
-//              QuotedStr('') + ', ' + IntToStr(vIDNovo) + ', ' + fDMPrincipal.vTerminal + ')');
-//          except
-//            on E: Exception do
-//            begin
-//              GravaLogErro('Erro Gravando Duplicata estoque nº: ' + IntToStr(vIDNovo));
-//            end;
-//          end;
           if not Erro then
           begin
             vTabela := 'CUPOMFISCAL_LOG';
@@ -843,6 +762,201 @@ begin
   end;
   AtualizaStatus('');
 {$ENDREGION}
+{$REGION 'Fechamento'}
+  try
+    AtualizaStatus('Verificando Fechamento');
+    Cont := 0;
+    _freeAndNilQry;
+    with fDMPrincipal do
+    begin
+      vTabela := 'FECHAMENTO_LOG';
+      ListaTipo.Clear;
+      ListaTipo.Add('0');
+      ListaTipo.Add('1');
+      NumReg := 3;
+      QryDados_Log := Abrir_Tabela_Log(tpLocal);
+      NumReg := 0;
+    end;
+    with QryDados_Log do
+    begin
+      if not(IsEmpty) then
+        while not Eof do
+        begin
+          Inc(Cont);
+          CupomExiste := False;
+          with fDMPrincipal do
+          begin
+            FHoraIni := Now;
+            vTabela := 'FECHAMENTO';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela(tpLocal);
+            if QryDadosLocal.IsEmpty then
+            begin
+              next;
+              Continue;
+            end;
+            vTabela := 'FECHAMENTO';
+            AdicionaDados('ID_FECHAMENTO_LOCAL', QryDadosLocal.FieldByName('ID').AsString);
+            AdicionaDados('TERMINAL_ID', QryDadosLocal.FieldByName('TERMINAL_ID').AsString, False);
+            QryDadosServer := Abrir_Tabela(tpServer);
+          end;
+          if QryDadosServer.IsEmpty then
+          begin
+            QryDadosServer.Insert;
+            vIDNovo := 0;
+          end
+          else
+          begin
+            QryDadosServer.Edit;
+            vIDNovo := QryDadosServer.FieldByName('ID').AsInteger;
+            FechamentoExiste := True;
+          end;
+          for i := 0 to QryDadosLocal.FieldCount - 1 do
+          begin
+            try
+              QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                QryDadosLocal.Fields[i].AsVariant;
+            except
+              on E: Exception do
+                TGravarLog.New.doSaveLog('Erro campos fechamento: ' + e.Message);
+            end;
+          end;
+          try
+            if vIDNovo = 0 then
+              vIDNovo := fDMPrincipal.FDServer.ExecSQLScalar
+                ('select gen_id(GEN_FECHAMENTO_ID,1) from rdb$database');
+            QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+            QryDadosServer.FieldByName('id_fechamento_local').asinteger := QryDadosLocal.FieldByName('ID').AsInteger;
+            QryDadosServer.Post;
+            if Cont = 3 then
+            begin
+              Application.ProcessMessages;
+              Cont := 0;
+            end;
+            QryDadosServer.CachedUpdates := true;
+            QryDadosServer.ApplyUpdates(0);
+            Erro := false;
+          except
+            on E: Exception do
+            begin
+              TGravarLog.New.doSaveLog(e.Message);
+              GravaLogErro('Erro Gravando Fechamento: ' + E.Message);
+              QryDadosServer.Cancel;
+              Erro := true;
+              Application.ProcessMessages;
+            end;
+          end;
+          // Gravar itens
+          with fDMPrincipal do
+          begin
+            vTabela := 'FECHAMENTO_ITENS';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela_FechamentoItem(tpLocal);
+          end;
+          AtualizaStatus('Enviado Itens do Fechamento');
+          while not QryDadosLocal.Eof do
+          begin
+            with fDMPrincipal do
+            begin
+              vTabela := 'FECHAMENTO_ITENS';
+              AdicionaDados('ID', IntToStr(vIDNovo));
+              AdicionaDados('ITEM', QryDadosLocal.FieldByName('ITEM').AsString, false);
+              QryDadosServer := Abrir_Tabela_FechamentoItem(tpServer);
+            end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
+            try
+              QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Fechamento Item: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
+            end;
+            QryDadosLocal.Next;
+          end;
+
+          // Gravar fechamento ret
+          with fDMPrincipal do
+          begin
+            vTabela := 'FECHAMENTO_RET';
+            AdicionaDados('ID', FieldByName('ID').AsString);
+            QryDadosLocal := Abrir_Tabela_FechamentoRet(tpLocal);
+          end;
+          AtualizaStatus('Enviado Fechamento Ret');
+          while not QryDadosLocal.Eof do
+          begin
+            with fDMPrincipal do
+            begin
+              vTabela := 'FECHAMENTO_RET';
+              AdicionaDados('ID', IntToStr(vIDNovo));
+              AdicionaDados('ITEM', QryDadosLocal.FieldByName('ITEM').AsString, false);
+              QryDadosServer := Abrir_Tabela_FechamentoRet(tpServer);
+            end;
+            if QryDadosServer.IsEmpty then
+              QryDadosServer.Insert
+            else
+              QryDadosServer.Edit;
+            for i := 0 to QryDadosLocal.FieldCount - 1 do
+            begin
+              try
+                QryDadosServer.FindField(QryDadosLocal.Fields[i].FieldName).AsVariant :=
+                  QryDadosLocal.Fields[i].AsVariant;
+              except
+                Application.ProcessMessages;
+              end;
+            end;
+            try
+              QryDadosServer.FieldByName('id').AsInteger := vIDNovo;
+              QryDadosServer.CachedUpdates := true;
+              QryDadosServer.Post;
+              QryDadosServer.ApplyUpdates(0);
+            except
+              on E: Exception do
+              begin
+                GravaLogErro('Erro Gravando Fechamento Ret: ' + E.Message);
+                QryDadosServer.Cancel;
+                Erro := true;
+                Application.ProcessMessages;
+              end;
+            end;
+            QryDadosLocal.Next;
+          end;
+          if not Erro then
+          begin
+            vTabela := 'FECHAMENTO_LOG';
+            vCondicao := 'and ID = ' + FieldByName('ID').AsString + ' AND TIPO IN (0,1)' ;
+            Apaga_Registro(fDMPrincipal.FDLocal, vTabela, true, vCondicao);
+          end;
+          FHoraFin := Now;
+          GravaLogErro('Diferença: ' + TimeToStr(FHoraFin - FHoraIni));
+          Next;
+        end;
+    end;
+  finally
+    FreeAndNil(QryDados_Log);
+  end;
+  AtualizaStatus('');
+{$ENDREGION}
+
 end;
 
 function TfrmPrincipal.ImportaServidorTabelaProduto: Boolean;
@@ -2020,6 +2134,18 @@ begin
   Show();
   WindowState := wsNormal;
   Application.BringToFront();
+end;
+
+procedure TfrmPrincipal._freeAndNilQry;
+begin
+  if Assigned(QryDados_Log) then
+  begin
+    FreeAndNil(QryDados_Log);
+  end;
+  if Assigned(QryDadosServer) then
+  begin
+    FreeAndNil(QryDadosServer);
+  end;
 end;
 
 procedure TfrmPrincipal.FinalizaThread(Sender: TObject);

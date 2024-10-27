@@ -14,7 +14,8 @@ uses
   Classe.Versao in 'Classe.Versao.pas',
   Classe.Thread in 'Classe.Thread.pas',
   GravarLog in 'GravarLog.pas',
-  Model.CupomFiscalItem in 'Model\Model.CupomFiscalItem.pas';
+  Model.CupomFiscalItem in 'Model\Model.CupomFiscalItem.pas',
+  Model.FechamentoItem in 'Model\Model.FechamentoItem.pas';
 
 {$R *.res}
 var

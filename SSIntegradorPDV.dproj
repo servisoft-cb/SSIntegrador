@@ -90,9 +90,10 @@
         <DCC_DcuOutput>..\bin</DCC_DcuOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
-        <VerInfo_Keys>CompanyName=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductVersion=1.0.0.0;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName);ProductName=$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileVersion=1.0.0.30;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductVersion=1.0.0.0;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName);ProductName=$(MSBuildProjectName)</VerInfo_Keys>
         <AppDPIAwarenessMode>PerMonitor</AppDPIAwarenessMode>
         <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_Build>30</VerInfo_Build>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -131,6 +132,7 @@
         <DCCReference Include="Classe.Thread.pas"/>
         <DCCReference Include="GravarLog.pas"/>
         <DCCReference Include="Model\Model.CupomFiscalItem.pas"/>
+        <DCCReference Include="Model\Model.FechamentoItem.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -161,6 +163,12 @@
             <Deployment Version="4">
                 <DeployFile LocalName="C:\Delphi7\SSFacil\EXE\SSIntegradorPDV.exe" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="C:\Delphi7\SSFacil\Exe\SSIntegradorPDV.exe" Configuration="Release" Class="ProjectOutput"/>
+                <DeployFile LocalName="D:\Delphi7\SSFacil\EXE\SSIntegradorPDV.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>SSIntegradorPDV.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="bin\SSIntegradorPDV.exe" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="bin\SSIntegradorPDV.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployClass Name="AdditionalDebugSymbols">

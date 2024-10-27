@@ -51,6 +51,8 @@ type
     function Abrir_Tabela_CupomParc(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_CupomItem(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_CupomPendente(Conexao: TEnumConexao): TFDQuery;
+    function Abrir_Tabela_FechamentoItem(Conexao: TEnumConexao): TFDQuery;
+    function Abrir_Tabela_FechamentoRet(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_Parametro(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_CFOP(Conexao: TEnumConexao): TFDQuery;
     function Abrir_Tabela_CFOP_VARIACAO(Conexao: TEnumConexao): TFDQuery;
@@ -66,7 +68,7 @@ implementation
 
 uses
   Vcl.Dialogs,
-  System.Types;
+  System.Types, Model.FechamentoItem;
 
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 {$R *.dfm}
@@ -167,7 +169,7 @@ begin
   end;
   Consulta.Close;
   Consulta.SQL.Clear;
-  Consulta.SQL.Add(GetCupomFiscalItem);
+  Consulta.SQL.Add(GetFechamentoItem);
   for i := 0 to Pred(ListaDados.Count) do
   begin
     if ListaDados[i].Campo <> EmptyStr then
@@ -230,6 +232,62 @@ begin
   end;
   FConsulta.Open;
   Result := FConsulta;
+end;
+
+function TDMPrincipal.Abrir_Tabela_FechamentoItem(
+  Conexao: TEnumConexao): TFDQuery;
+var
+  Consulta: TFDQuery;
+  Condicao: String;
+  i: Integer;
+begin
+  Condicao := '';
+  Consulta := TFDQuery.Create(Self);
+  case Conexao of
+    tpLocal: Consulta.Connection := FDLocal;
+    tpServer: Consulta.Connection := FDServer;
+  end;
+  Consulta.Close;
+  Consulta.SQL.Clear;
+  Consulta.SQL.Add(GetFechamentoItem);
+  for i := 0 to Pred(ListaDados.Count) do
+  begin
+    if ListaDados[i].Campo <> EmptyStr then
+      Consulta.SQL.Add(' AND ' + ListaDados[i].Campo + ' = ' + ListaDados[i].Valor);
+  end;
+  Consulta.Open;
+  Result := Consulta;
+end;
+
+function TDMPrincipal.Abrir_Tabela_FechamentoRet(
+  Conexao: TEnumConexao): TFDQuery;
+var
+  Consulta: TFDQuery;
+  Condicao: String;
+  i: Integer;
+begin
+  Condicao := '';
+  Consulta := TFDQuery.Create(Self);
+  case Conexao of
+    tpLocal:
+      Consulta.Connection := FDLocal;
+    tpServer:
+      Consulta.Connection := FDServer;
+  end;
+  Consulta.Close;
+  Consulta.SQL.Clear;
+  Consulta.SQL.Add('select ID, ITEM, data, VALOR, ES, DESCRICAO, ');
+  Consulta.SQL.Add('ID_TIPOCOBRANCA, ID_FINANCEIRO, TIPO_RETIRADA, ');
+  Consulta.SQL.Add('DATA_CONFERENCIA, USUARIO_CONFERENCIA');
+  Consulta.SQL.Add('from FECHAMENTO_RET');
+  Consulta.SQL.Add('WHERE 0=0 ');
+  for i := 0 to Pred(ListaDados.Count) do
+  begin
+    if ListaDados[i].Campo <> EmptyStr then
+      Consulta.SQL.Add(' AND ' + ListaDados[i].Campo + ' = ' + ListaDados[i].Valor);
+  end;
+  Consulta.Open;
+  Result := Consulta;
 end;
 
 function TDMPrincipal.Abrir_Tabela_Log(Conexao: TEnumConexao): TFDQuery;
