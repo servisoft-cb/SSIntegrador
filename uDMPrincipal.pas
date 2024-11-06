@@ -169,7 +169,7 @@ begin
   end;
   Consulta.Close;
   Consulta.SQL.Clear;
-  Consulta.SQL.Add(GetFechamentoItem);
+  Consulta.SQL.Add(GetCupomFiscalItem);
   for i := 0 to Pred(ListaDados.Count) do
   begin
     if ListaDados[i].Campo <> EmptyStr then
